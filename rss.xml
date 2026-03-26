@@ -1,0 +1,72 @@
+<?php
+// rss.xml - RSS 订阅生成文件
+// 这个文件会被当作 PHP 执行，但 URL 显示为 .xml 格式
+
+include 'config.php';
+include 'includes/functions.php';
+
+// 获取网站设置
+$site_title = getSetting($conn, 'site_title') ?: '我的博客';
+$friend_name = getSetting($conn, 'friend_name') ?: '博主';
+$friend_signature = getSetting($conn, 'friend_signature') ?: '';
+
+// 获取当前域名
+$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+$domain = $protocol . $_SERVER['HTTP_HOST'];
+
+// 获取最新的说说（最多20条）
+$result = $conn->query("SELECT * FROM posts ORDER BY created_at DESC LIMIT 20");
+
+// 设置 RSS 内容类型
+header('Content-Type: application/rss+xml; charset=utf-8');
+
+// 输出 RSS XML
+echo '<?xml version="1.0" encoding="UTF-8"?>';
+?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+    <channel>
+        <title><?php echo htmlspecialchars($site_title); ?></title>
+        <link><?php echo htmlspecialchars($domain); ?>/</link>
+        <description><?php echo htmlspecialchars($friend_signature ?: $friend_name . '的说说'); ?></description>
+        <language>zh-CN</language>
+        <lastBuildDate><?php echo date('r'); ?></lastBuildDate>
+        <generator>小归客博客系统</generator>
+        <atom:link href="<?php echo htmlspecialchars($domain); ?>/rss.xml" rel="self" type="application/rss+xml" />
+        
+        <?php if ($result && $result->num_rows > 0): ?>
+            <?php while ($post = $result->fetch_assoc()): 
+                $post_url = $domain . '/#post-' . $post['id'];
+                $pub_date = date('r', strtotime($post['created_at']));
+                $images = json_decode($post['images'], true) ?: [];
+                
+                // 构建内容（包含图片）
+                $content = htmlspecialchars($post['content']);
+                $content_with_images = nl2br($content);
+                
+                // 添加图片到内容中
+                if (!empty($images)) {
+                    foreach ($images as $img) {
+                        $img_url = $domain . '/' . $img;
+                        $content_with_images .= '<br><br><img src="' . htmlspecialchars($img_url) . '" alt="图片" />';
+                    }
+                }
+                
+                // 添加地址信息
+                if (!empty($post['music'])) {
+                    $content_with_images .= '<br><br><small>📍 ' . htmlspecialchars($post['music']) . '</small>';
+                }
+            ?>
+            <item>
+                <title><?php echo htmlspecialchars(mb_substr($post['content'], 0, 50) . (mb_strlen($post['content']) > 50 ? '...' : '')); ?></title>
+                <link><?php echo htmlspecialchars($post_url); ?></link>
+                <guid isPermaLink="true"><?php echo htmlspecialchars($post_url); ?></guid>
+                <pubDate><?php echo $pub_date; ?></pubDate>
+                <author><?php echo htmlspecialchars($friend_name); ?></author>
+                <description><?php echo $content; ?></description>
+                <content:encoded><![CDATA[<?php echo $content_with_images; ?>]]></content:encoded>
+            </item>
+            <?php endwhile; ?>
+        <?php endif; ?>
+        
+    </channel>
+</rss>

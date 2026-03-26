@@ -1,1 +1,30 @@
- 
+# 启用 URL 重写
+RewriteEngine On
+
+# 将 rss.xml 重写为 rss.php（如果 rss.xml 不存在）
+RewriteRule ^rss\.xml$ rss.php [L]
+
+# 或者让 .xml 文件也能执行 PHP
+AddHandler application/x-httpd-php .xml
+
+# 防止目录浏览
+Options -Indexes
+
+# 设置默认字符集
+AddDefaultCharset UTF-8
+
+# 启用 gzip 压缩
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/rss+xml
+</IfModule>
+
+# 设置缓存
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpg "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType text/css "access plus 1 week"
+    ExpiresByType application/javascript "access plus 1 week"
+</IfModule>

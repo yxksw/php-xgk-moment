@@ -59,6 +59,9 @@ $user_info = $_SESSION['user_info'] ?? [];
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title><?php echo htmlspecialchars($site_title); ?></title>
     
+    <!-- RSS 订阅链接 -->
+    <link rel="alternate" type="application/rss+xml" title="<?php echo htmlspecialchars($site_title); ?> - RSS 订阅" href="/rss.xml" />
+    
     <link rel="stylesheet" href="https://font.sec.miui.com/font/css?family=MiSans:400,700:MiSans" />
     <style>
         body {
@@ -170,6 +173,37 @@ $user_info = $_SESSION['user_info'] ?? [];
         body.dark-mode .pagination .current {
             background: #07c160;
             color: white;
+        }
+        body.dark-mode .footer a[href*="rss"] {
+            color: #ff944d !important;
+        }
+
+        /* 评论框深色模式适配 */
+        body.dark-mode .comment-container input[type="text"],
+        body.dark-mode .comment-container input[type="email"],
+        body.dark-mode .comment-container textarea {
+            background: #3d3d3d !important;
+            color: #e0e0e0 !important;
+            border-color: #555 !important;
+        }
+        body.dark-mode .comment-container input::placeholder,
+        body.dark-mode .comment-container textarea::placeholder {
+            color: #888 !important;
+        }
+        body.dark-mode .comment-container button[type="button"] {
+            background: #3d3d3d !important;
+            color: #b0b0b0 !important;
+            border-color: #555 !important;
+        }
+        body.dark-mode .comment-container form {
+            border-color: #444 !important;
+        }
+        /* 评论内容文字颜色 */
+        body.dark-mode .comment-container div[style*="color:#333"] {
+            color: #e0e0e0 !important;
+        }
+        body.dark-mode .comment-container > div {
+            color: #e0e0e0 !important;
         }
 
         /* 明暗模式切换按钮 */
