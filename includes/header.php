@@ -177,6 +177,10 @@ $user_info = $_SESSION['user_info'] ?? [];
         body.dark-mode .footer a[href*="rss"] {
             color: #ff944d !important;
         }
+        /* 深色模式下导航栏图标颜色 */
+        body.dark-mode .top-navbar.scrolled .nav-icon {
+            color: #e0e0e0;
+        }
 
         /* 评论框深色模式适配 */
         body.dark-mode .comment-container input[type="text"],
@@ -205,36 +209,23 @@ $user_info = $_SESSION['user_info'] ?? [];
         body.dark-mode .comment-container > div {
             color: #e0e0e0 !important;
         }
-
-        /* 明暗模式切换按钮 */
-        .theme-toggle {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: #4a90e2;
-            color: #fff;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            transition: all 0.3s ease;
-        }
-        .theme-toggle:hover {
-            transform: scale(1.1);
-            background: #357abd;
-        }
-        .theme-toggle svg {
-            width: 24px;
-            height: 24px;
-        }
         
         * {font-family: MiSans}
+        
+        /* 自定义鼠标样式 */
+        body {
+            cursor: url('/default.cur'), auto;
+        }
+        
+        /* 链接和按钮的鼠标样式 */
+        a, button, .nav-icon, .music-cover, .theme-toggle, #waifu-tool span {
+            cursor: url('/default.cur'), pointer;
+        }
+        
+        /* 输入框的鼠标样式 */
+        input, textarea, .form-control {
+            cursor: url('/default.cur'), text;
+        }
         
         .card { max-width: 576px; width: 100%; margin: 0 auto; padding: 0px; }
         .cover-section { position: relative; width: 100%; height: 320px; overflow: hidden; }
@@ -416,6 +407,19 @@ $user_info = $_SESSION['user_info'] ?? [];
                 <circle cx="9" cy="7" r="3"></circle>
                 <circle cx="15" cy="7" r="3"></circle>
                 <path d="M3 20v-2a6 6 0 0 1 6-6h6a6 6 0 0 1 6 6v2"></path>
+            </svg>
+            
+            <!-- 明暗模式切换按钮 -->
+            <svg class="nav-icon" id="themeToggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="cursor: pointer;" title="切换明暗模式">
+                <!-- 太阳图标（浅色模式） -->
+                <g id="navLightIcon">
+                    <circle cx="12" cy="12" r="4"></circle>
+                    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+                </g>
+                <!-- 月亮图标（深色模式）默认隐藏 -->
+                <g id="navDarkIcon" style="display:none;">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </g>
             </svg>
         </div>
         <div class="nav-right">

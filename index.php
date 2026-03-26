@@ -114,6 +114,12 @@ include 'includes/header.php';
     <?php endif; ?>
 
 <?php
+// 音乐播放器
+include 'includes/music-player.php';
+
+// Live2D 看板娘
+include 'includes/live2d-widget.php';
+
 // 修改点：路径加上 includes/
 include 'includes/footer.php';
 ?>
