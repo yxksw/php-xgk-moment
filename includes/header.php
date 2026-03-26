@@ -69,6 +69,136 @@ $user_info = $_SESSION['user_info'] ?? [];
             overflow-y: scroll; /* 关键修复：强制保留滚动条位置防止跳动 */
             transition: background-color 0.3s ease, color 0.3s ease;
         }
+
+        /* 深色模式基础样式 */
+        body.dark-mode {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+        }
+        body.dark-mode .card {
+            background-color: #1a1a1a;
+        }
+        body.dark-mode .post-item {
+            background: #2d2d2d;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+        }
+        body.dark-mode .post-author {
+            color: #e0e0e0;
+        }
+        body.dark-mode .post-content {
+            color: #e0e0e0;
+        }
+        body.dark-mode .plan {
+            color: #888;
+            border-color: #444;
+        }
+        body.dark-mode .dz {
+            color: #6ab3ff;
+        }
+        body.dark-mode .signature {
+            background-color: #2d2d2d;
+            color: #b0b0b0;
+        }
+        body.dark-mode .top-navbar.scrolled {
+            background-color: #2d2d2d;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        body.dark-mode .modal-content {
+            background: #2d2d2d;
+            color: #e0e0e0;
+        }
+        body.dark-mode .modal-header {
+            border-color: #444;
+        }
+        body.dark-mode .modal-header h3 {
+            color: #e0e0e0;
+        }
+        body.dark-mode .close-btn {
+            color: #888;
+        }
+        body.dark-mode .close-btn:hover {
+            color: #e0e0e0;
+        }
+        body.dark-mode .form-group label {
+            color: #b0b0b0;
+        }
+        body.dark-mode .form-group input,
+        body.dark-mode .form-group textarea {
+            background: #3d3d3d;
+            color: #e0e0e0;
+            border-color: #555;
+        }
+        body.dark-mode .list-item {
+            border-color: #444;
+        }
+        body.dark-mode .list-item:hover {
+            background-color: #3d3d3d;
+        }
+        body.dark-mode .item-title {
+            color: #e0e0e0;
+        }
+        body.dark-mode .item-sub {
+            color: #888;
+        }
+        body.dark-mode .setting-item {
+            color: #e0e0e0;
+        }
+        body.dark-mode .info-row {
+            background: #3d3d3d;
+        }
+        body.dark-mode .info-label {
+            color: #888;
+        }
+        body.dark-mode .info-value {
+            color: #e0e0e0;
+        }
+        body.dark-mode .footer {
+            background-color: #2d2d2d;
+            border-color: #444;
+            color: #888;
+        }
+        body.dark-mode .pagination a,
+        body.dark-mode .pagination span {
+            background: #2d2d2d;
+            border-color: #444;
+            color: #6ab3ff;
+        }
+        body.dark-mode .pagination .disabled {
+            color: #666;
+            border-color: #333;
+        }
+        body.dark-mode .pagination .current {
+            background: #07c160;
+            color: white;
+        }
+
+        /* 明暗模式切换按钮 */
+        .theme-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #4a90e2;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        .theme-toggle:hover {
+            transform: scale(1.1);
+            background: #357abd;
+        }
+        .theme-toggle svg {
+            width: 24px;
+            height: 24px;
+        }
         
         * {font-family: MiSans}
         
