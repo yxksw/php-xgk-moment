@@ -532,7 +532,7 @@ echo htmlspecialchars($current_url);
         </div>
     </div>
 
-    <!-- 群组弹窗 -->
+    <!-- 友链弹窗 -->
     <div id="groupModal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -541,10 +541,45 @@ echo htmlspecialchars($current_url);
             </div>
             <div class="modal-body">
                 <div class="list-group">
-    <div class="list-item"><div class="item-icon">  <img src="https://q1.qlogo.cn/g?b=qq&amp;nk=9892054&amp;s=100" class="logo">   </div><div class="item-info"><div class="item-title">小归客</div><div class="item-sub">https://xgk.pw/</div></div></div>
-    <div class="list-item"><div class="item-icon">  <img src="https://q1.qlogo.cn/g?b=qq&amp;nk=9892054&amp;s=100" class="logo"> </div><div class="item-info"><div class="item-title">修罗会员</div><div class="item-sub">https://xiuno.vip/</div></div></div>
+                    <?php
+                    // 获取友链数据
+                    $friend_links = [];
+                    if (isset($conn) && $conn) {
+                        try {
+                            // 检查表是否存在
+                            $table_check = $conn->query("SHOW TABLES LIKE 'links'");
+                            if ($table_check && $table_check->num_rows > 0) {
+                                $links_result = $conn->query("SELECT * FROM links ORDER BY sort_order ASC, id DESC LIMIT 20");
+                                if ($links_result && $links_result->num_rows > 0) {
+                                    while ($link = $links_result->fetch_assoc()) {
+                                        $friend_links[] = $link;
+                                    }
+                                }
+                            }
+                        } catch (Exception $e) {
+                            // 忽略数据库错误
+                        }
+                    }
+                    ?>
+                    <?php if (!empty($friend_links)): ?>
+                        <?php foreach ($friend_links as $link): ?>
+                            <a href="<?php echo htmlspecialchars($link['url']); ?>" target="_blank" class="list-item" title="<?php echo htmlspecialchars($link['description'] ?? ''); ?>">
+                                <div class="item-icon">
+                                    <img src="<?php echo htmlspecialchars($link['avatar'] ?: 'https://q1.qlogo.cn/g?b=qq&nk=0&s=100'); ?>" class="logo" alt="<?php echo htmlspecialchars($link['name']); ?>">
+                                </div>
+                                <div class="item-info">
+                                    <div class="item-title"><?php echo htmlspecialchars($link['name']); ?></div>
+                                    <div class="item-sub"><?php echo htmlspecialchars($link['url']); ?></div>
+                                </div>
+                            </a>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <div class="list-item" style="justify-content: center; color: #999;">
+                            暂无友链
+                        </div>
+                    <?php endif; ?>
                 </div>
-                <button class="action-btn">更新中</button>
+                <button class="action-btn" onclick="closeModal('groupModal')">关闭</button>
             </div>
         </div>
     </div>
