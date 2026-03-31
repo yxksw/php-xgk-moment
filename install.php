@@ -24,6 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['install'])) {
             `content` TEXT NOT NULL,
             `images` TEXT,
             `music` VARCHAR(255),
+            `is_pinned` TINYINT(1) DEFAULT 0 COMMENT '置顶级别：0=不置顶, 1=置顶栏位1, 2=置顶栏位2, 3=置顶栏位3',
             `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
@@ -35,6 +36,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['install'])) {
             `content` TEXT NOT NULL,
             `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (`post_id`) REFERENCES `posts`(`id`) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        // 创建点赞表
+        $conn->query("CREATE TABLE IF NOT EXISTS `likes` (
+            `id` INT AUTO_INCREMENT PRIMARY KEY,
+            `post_id` INT NOT NULL,
+            `anonymous_id` VARCHAR(64) NOT NULL COMMENT '匿名用户ID',
+            `author` VARCHAR(100) DEFAULT NULL COMMENT '用户昵称',
+            `email` VARCHAR(100) DEFAULT NULL COMMENT '用户邮箱',
+            `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (`post_id`) REFERENCES `posts`(`id`) ON DELETE CASCADE,
+            UNIQUE KEY `unique_like` (`post_id`, `anonymous_id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
         
         

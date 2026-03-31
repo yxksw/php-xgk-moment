@@ -256,6 +256,250 @@ $user_info = $_SESSION['user_info'] ?? [];
         .plan { padding: 1px; color: #999; font-size: 12px; display: flex; margin-left: 40px; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 0, 0, 0.1); }
         .dz{ margin: 10px 0;margin-left: 40px;font-size: 12px;color:#576b95;}
         
+        /* 置顶和广告标签样式 - 参考图样式 */
+        .post-author-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+        }
+        
+        .post-author {
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 0;
+        }
+        
+        .post-tags {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            line-height: 1.2;
+        }
+        
+        /* 置顶标签 - 绿色背景 */
+        .tag-pinned {
+            background-color: #07c160;
+            color: #fff;
+        }
+        
+        /* 标记标签 - 橙色背景 */
+        .tag-marked {
+            background-color: #ff9500;
+            color: #fff;
+        }
+        
+        /* 深色模式下的标签样式 */
+        body.dark-mode .tag-pinned {
+            background-color: #07c160;
+            color: #fff;
+        }
+        
+        body.dark-mode .tag-marked {
+            background-color: #cc7a00;
+            color: #fff;
+        }
+        
+        /* 搜索弹窗样式 */
+        .search-modal-content {
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .search-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        
+        .search-input:focus {
+            border-color: #07c160;
+        }
+        
+        .search-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #07c160;
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+        }
+        
+        .search-btn:hover {
+            background: #06b359;
+        }
+        
+        .search-results {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .search-placeholder {
+            text-align: center;
+            color: #999;
+            padding: 40px 20px;
+            font-size: 14px;
+        }
+        
+        .search-result-item {
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .search-result-item:hover {
+            background: #f9f9f9;
+        }
+        
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .search-result-content {
+            font-size: 14px;
+            color: #333;
+            line-height: 1.5;
+            margin-bottom: 8px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .search-result-date {
+            font-size: 12px;
+            color: #999;
+        }
+        
+        .search-no-results {
+            text-align: center;
+            color: #999;
+            padding: 40px 20px;
+            font-size: 14px;
+        }
+        
+        .search-loading {
+            text-align: center;
+            color: #999;
+            padding: 40px 20px;
+            font-size: 14px;
+        }
+        
+        /* 深色模式下的搜索样式 */
+        body.dark-mode .search-input {
+            background: #3d3d3d;
+            border-color: #555;
+            color: #e0e0e0;
+        }
+        
+        body.dark-mode .search-input::placeholder {
+            color: #888;
+        }
+        
+        body.dark-mode .search-result-item {
+            border-bottom-color: #444;
+        }
+        
+        body.dark-mode .search-result-item:hover {
+            background: #3d3d3d;
+        }
+        
+        body.dark-mode .search-result-content {
+            color: #e0e0e0;
+        }
+        
+        body.dark-mode .search-placeholder,
+        body.dark-mode .search-no-results,
+        body.dark-mode .search-loading {
+            color: #888;
+        }
+        
+        /* 说说操作按钮样式 */
+        .post-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 4px;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .edit-btn {
+            color: #07c160;
+            background: rgba(7, 193, 96, 0.1);
+        }
+        
+        .edit-btn:hover {
+            background: #07c160;
+            color: white;
+        }
+        
+        .delete-btn {
+            color: #ff4d4f;
+            background: rgba(255, 77, 79, 0.1);
+        }
+        
+        .delete-btn:hover {
+            background: #ff4d4f;
+            color: white;
+        }
+        
+        /* 深色模式下的操作按钮 */
+        body.dark-mode .edit-btn {
+            color: #07c160;
+            background: rgba(7, 193, 96, 0.2);
+        }
+        
+        body.dark-mode .edit-btn:hover {
+            background: #07c160;
+            color: white;
+        }
+        
+        body.dark-mode .delete-btn {
+            color: #ff4d4f;
+            background: rgba(255, 77, 79, 0.2);
+        }
+        
+        body.dark-mode .delete-btn:hover {
+            background: #ff4d4f;
+            color: white;
+        }
+        
         .alert { padding: 8px; border-radius: 4px; margin: 10px 0; font-size: 13px; text-align: center; }
         .alert-success { background: #e6f4ea; color: #07c160; }
         .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 20px; padding: 10px 0; align-items: center; }
@@ -266,11 +510,178 @@ $user_info = $_SESSION['user_info'] ?? [];
         /* 导航栏 */
         .top-navbar { position: fixed; top: 0; left: 50%; transform: translateX(-50%); max-width: 576px; width: 100%; height: 50px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; box-sizing: border-box; z-index: 1000; background-color: transparent; transition: background-color 0.3s ease, box-shadow 0.3s ease; border-radius: 0 0 8px 8px; }
         .top-navbar.scrolled { background-color: #ffffff; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); }
-        .nav-left, .nav-right { display: flex; gap: 20px; }
+        .nav-left, .nav-right { display: flex; gap: 20px; align-items: center; }
         .nav-icon { width: 24px; height: 24px; color: #fff; cursor: pointer; transition: color 0.3s, transform 0.2s; filter: drop-shadow(0 0 2px rgba(0,0,0,0.6)); }
         .top-navbar.scrolled .nav-icon { color: #333; filter: none; }
         .nav-icon:hover { transform: scale(1.1); }
         .nav-icon a { text-decoration: none; display: block; } /* 确保链接内的图标也生效 */
+        
+        /* 音乐播放器样式 */
+        .music-player {
+            width: 120px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .sh-main-top-mu {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-left: 5px;
+            margin-right: 5px;
+            cursor: pointer;
+        }
+        
+        .sh-main-top-g-container {
+            width: 60px;
+            height: 2px;
+            background: rgb(215 215 215 / 75%);
+            margin-left: 2px;
+            margin-right: 2px;
+            border-radius: 4px;
+        }
+        
+        .sh-main-top-mu-bgmq {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-left: 5px;
+            margin-right: 5px;
+            cursor: pointer;
+        }
+        
+        /* 音乐动画样式 */
+        .shaft-load2 {
+            width: 100%;
+            height: 2px;
+            overflow: hidden;
+        }
+        
+        .shaft-load2 > div {
+            float: left;
+            height: 100%;
+            width: 5px;
+            margin-right: 1px;
+            display: inline-block;
+            background: #959595;
+            -webkit-animation: loading2 1.5s infinite ease-in-out;
+            -moz-animation: loading2 1.5s infinite ease-in-out;
+            -o-animation: loading2 1.5s infinite ease-in-out;
+            animation: loading2 1.5s infinite ease-in-out;
+            -webkit-transform: scaleY(0.05) translateX(-5px);
+            -moz-transform: scaleY(0.05) translateX(-5px);
+            -ms-transform: scaleY(0.05) translateX(-5px);
+            -o-transform: scaleY(0.05) translateX(-5px);
+            transform: scaleY(0.05) translateX(-5px);
+        }
+        
+        @-webkit-keyframes loading2 {
+            10% {
+                background: #ffffff;
+            }
+            15% {
+                -webkit-transform: scaleY(1.2) translateX(10px);
+                -moz-transform: scaleY(1.2) translateX(10px);
+                -ms-transform: scaleY(1.2) translateX(10px);
+                -o-transform: scaleY(1.2) translateX(10px);
+                transform: scaleY(1.2) translateX(10px);
+                background: #ffffff;
+            }
+            90%, 100% {
+                -webkit-transform: scaleY(0.05) translateX(-5px);
+                -moz-transform: scaleY(0.05) translateX(-5px);
+                -ms-transform: scaleY(0.05) translateX(-5px);
+                -o-transform: scaleY(0.05) translateX(-5px);
+                transform: scaleY(0.05) translateX(-5px);
+            }
+        }
+        
+        @keyframes loading2 {
+            10% {
+                background: #ffffff;
+            }
+            15% {
+                -webkit-transform: scaleY(1.2) translateX(10px);
+                -moz-transform: scaleY(1.2) translateX(10px);
+                -ms-transform: scaleY(1.2) translateX(10px);
+                -o-transform: scaleY(1.2) translateX(10px);
+                transform: scaleY(1.2) translateX(10px);
+                background: #ffffff;
+            }
+            90%, 100% {
+                -webkit-transform: scaleY(0.05) translateX(-5px);
+                -moz-transform: scaleY(0.05) translateX(-5px);
+                -ms-transform: scaleY(0.05) translateX(-5px);
+                -o-transform: scaleY(0.05) translateX(-5px);
+                transform: scaleY(0.05) translateX(-5px);
+            }
+        }
+        
+        /* 深色模式下的音乐播放器样式 */
+        body.dark-mode .sh-main-top-g-container {
+            background: rgb(100 100 100 / 75%);
+        }
+        
+        body.dark-mode .shaft-load2 > div {
+            background: #666;
+        }
+        
+        /* 深色模式下的动画颜色 */
+        body.dark-mode .shaft-load2 > div {
+            background: #666;
+        }
+        
+        /* 动画规则不能嵌套在选择器内部，所以我们通过修改元素样式来适配深色模式 */
+        
+        /* 图标字体 */
+        @font-face {
+          font-family: "iconfont"; /* Project id 3781624 */
+          src: url('//at.alicdn.com/t/c/font_3781624_acf7eqdy5ke.woff2?t=1703660110630') format('woff2'),
+               url('//at.alicdn.com/t/c/font_3781624_acf7eqdy5ke.woff?t=1703660110630') format('woff'),
+               url('//at.alicdn.com/t/c/font_3781624_acf7eqdy5ke.ttf?t=1703660110630') format('truetype');
+        }
+        
+        .iconfont {
+          font-family: "iconfont" !important;
+          font-size: 16px;
+          font-style: normal;
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .icon-jixu:before {
+          content: "\e68b";
+        }
+        
+        .icon-iconstop:before {
+          content: "\e69d";
+        }
+        
+        .icon-yinle_2:before {
+          content: "\e705";
+        }
+        
+        .ri-z-sx {
+            font-size: 20px;
+            color: var(--iconbs);
+        }
+        
+        :root {
+            --iconbs: rgb(255 255 255);
+        }
+        
+        .top-navbar.scrolled .ri-z-sx {
+            color: #333;
+        }
+        
+        body.dark-mode .top-navbar.scrolled .ri-z-sx {
+            color: #e0e0e0;
+        }
 
         /* 弹窗核心样式 */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); z-index: 2000; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s ease; }
@@ -421,8 +832,38 @@ $user_info = $_SESSION['user_info'] ?? [];
                     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
                 </g>
             </svg>
+            
+            <!-- 音乐播放器 -->
+            <div class="nav-icon music-player" style="position: relative; display: flex; align-items: center;">
+                <div class="sh-main-top-mu" lang="0" onclick="syaudbf()"><i class="iconfont icon-jixu ri-z-sx" id="sh-main-top-mu" lang="0" data-bfzt="bb"></i></div>
+                <div id="sh-main-top-g-m" class="sh-main-top-g-container" lang="音乐">
+                    <div id="sh-main-top-mucisjd" lang="0" style="display:none">
+                        <!--音乐动画-->
+                        <div class="shaft-load2">
+                            <div class="shaft1"></div>
+                            <div class="shaft2"></div>
+                            <div class="shaft3"></div>
+                            <div class="shaft4"></div>
+                            <div class="shaft5"></div>
+                            <div class="shaft6"></div>
+                            <div class="shaft7"></div>
+                            <div class="shaft8"></div>
+                            <div class="shaft9"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="sh-main-top-mu-bgmq" onclick="sjsyyy()"><i class="iconfont icon-yinle_2 ri-z-sx" id="sh-main-top-mu-bgmq"></i></div>
+                <audio id="sh-main-top-musicplay-b" src="https://cdn.261770.xyz/music/%E4%B8%80%E5%8F%A5%E8%AF%9D%E5%BD%A2%E5%AE%B9%E4%B8%8D%E4%BA%86%E7%BB%88%E6%9E%81%E7%AC%94%E8%AE%B0%20-%20%E5%BA%94%E6%9C%89%E6%A3%A0%E3%80%81%E5%8F%B6%E8%90%BD%E6%A2%A6%E4%B8%AD%E3%80%81%E7%BB%AF%E8%A8%80%E3%80%81%E5%B0%8F%E5%B1%B1xl%E3%80%81%E9%9C%84%E9%95%81%E3%80%81%E9%83%AD%E6%9B%A6%E9%98%B3%E3%80%81%E5%A0%87%E5%A2%A8%E5%AE%89%E6%AD%8C%E3%80%81%E5%A4%A9%E7%BD%97.mp3" type="audio/mp3" controls="controls" style="display: none;">
+                   </audio>
+            </div>
         </div>
         <div class="nav-right">
+            <!-- 搜索按钮 -->
+            <svg class="nav-icon" id="btnSearch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="cursor: pointer;" title="搜索" onclick="openModal('searchModal')">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="M21 21l-4.35-4.35"></path>
+            </svg>
+            
             <?php if ($is_logged_in): ?>
                 <a href="includes/edit-page.php" title="发表说说" style="text-decoration: none;">
                     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -603,6 +1044,30 @@ echo htmlspecialchars($current_url);
         </div>
     </div>
 
+    <!-- 搜索弹窗 -->
+    <div id="searchModal" class="modal-overlay">
+        <div class="modal-content search-modal-content">
+            <div class="modal-header">
+                <h3>搜索文章</h3>
+                <span class="close-btn" onclick="closeModal('searchModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="search-form">
+                    <input type="text" id="searchInput" class="search-input" placeholder="输入关键词搜索文章..." onkeypress="if(event.key==='Enter') performSearch()">
+                    <button class="search-btn" onclick="performSearch()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="M21 21l-4.35-4.35"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div id="searchResults" class="search-results">
+                    <div class="search-placeholder">输入关键词开始搜索</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 背景图及悬浮信息 -->
     <div class="cover-section">
         <img src="<?php echo htmlspecialchars($friend_background ?? 'https://via.placeholder.com/800x320'); ?>" alt="背景图">
@@ -616,7 +1081,100 @@ echo htmlspecialchars($current_url);
 
     <div class="signature"><?php echo htmlspecialchars($friend_signature ?? '这个人很懒，什么都没写'); ?></div>
 
-
+    <!-- 音乐播放器脚本 -->
+    <script>
+    function syaudbf() {
+        var mainTopGM = document.getElementById("sh-main-top-g-m");
+        
+        if (mainTopGM.style.background === "rgba(255, 255, 255, 0)") {
+            mainTopGM.style.background = "";
+        } else {
+            mainTopGM.style.background = "rgba(255, 255, 255, 0)";
+        }
+    }
+    
+    document.getElementById('sh-main-top-mu').addEventListener('click', function() {
+        var iconElement = document.getElementById('sh-main-top-mu');
+        var element = document.getElementById('sh-main-top-mucisjd');
+        var audioElement = document.getElementById('sh-main-top-musicplay-b');
+        
+        if (iconElement.getAttribute('lang') === '0') {
+            iconElement.setAttribute('lang', '1');
+            iconElement.setAttribute('class', 'iconfont icon-iconstop ri-z-sx');
+            iconElement.setAttribute('data-bfzt', 'bbz');
+        } else {
+            iconElement.setAttribute('lang', '0');
+            iconElement.setAttribute('class', 'iconfont icon-jixu ri-z-sx');
+            iconElement.setAttribute('data-bfzt', 'bb');
+        }
+        
+        if (element.style.display === 'none') {
+            element.style.display = 'block';
+        } else {
+            element.style.display = 'none';
+        }
+        
+        if (audioElement.paused) {
+            audioElement.play();
+        } else {
+            audioElement.pause();
+        }
+    });
+    
+    function sjsyyy() {
+        var audioElement = document.getElementById('sh-main-top-musicplay-b');
+        audioElement.pause();
+        audioElement.currentTime = 0;
+        document.getElementById('sh-main-top-mu').setAttribute('lang', '0');
+        document.getElementById('sh-main-top-mu').setAttribute('class', 'iconfont icon-jixu ri-z-sx');
+        document.getElementById('sh-main-top-mu').setAttribute('data-bfzt', 'bb');
+        document.getElementById('sh-main-top-mucisjd').style.display = 'none';
+    }
+    
+    // 搜索功能
+    function performSearch() {
+        const keyword = document.getElementById('searchInput').value.trim();
+        const resultsContainer = document.getElementById('searchResults');
+        
+        if (!keyword) {
+            resultsContainer.innerHTML = '<div class="search-placeholder">输入关键词开始搜索</div>';
+            return;
+        }
+        
+        resultsContainer.innerHTML = '<div class="search-loading">搜索中...</div>';
+        
+        // 发送搜索请求
+        fetch('search.php?keyword=' + encodeURIComponent(keyword))
+            .then(response => response.json())
+            .then(data => {
+                if (data.code === 200 && data.data.length > 0) {
+                    let html = '';
+                    data.data.forEach(post => {
+                        html += `
+                            <div class="search-result-item" onclick="window.location.href='?id=${post.id}'">
+                                <div class="search-result-content">${escapeHtml(post.content)}</div>
+                                <div class="search-result-date">${post.formatted_date}</div>
+                            </div>
+                        `;
+                    });
+                    resultsContainer.innerHTML = html;
+                } else {
+                    resultsContainer.innerHTML = '<div class="search-no-results">未找到相关内容</div>';
+                }
+            })
+            .catch(error => {
+                console.error('搜索错误:', error);
+                resultsContainer.innerHTML = '<div class="search-no-results">搜索出错，请稍后重试</div>';
+            });
+    }
+    
+    // HTML 转义函数
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    </script>
 
 
 

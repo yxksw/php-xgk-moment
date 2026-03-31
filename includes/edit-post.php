@@ -10,7 +10,7 @@ session_start();
 
 // 引入配置
 include '../config.php';
-include '../includes/functions.php'; 
+include '../includes/functions.php';
 
 // 权限检查
 if (!isset($_SESSION['admin'])) {
@@ -18,19 +18,53 @@ if (!isset($_SESSION['admin'])) {
     exit;
 }
 
+// 获取说说ID
+$postId = isset($_GET['id']) ? intval($_GET['id']) : 0;
+
+if ($postId <= 0) {
+    header('Location: ../index.php');
+    exit;
+}
+
+// 获取说说数据
+$stmt = $conn->prepare("SELECT * FROM posts WHERE id = ?");
+$stmt->bind_param("i", $postId);
+$stmt->execute();
+$result = $stmt->get_result();
+$post = $result->fetch_assoc();
+
+if (!$post) {
+    header('Location: ../index.php');
+    exit;
+}
+
+// 解析现有图片
+$existingImages = json_decode($post['images'], true) ?: [];
+$uploadedImages = [];
+$externalImages = [];
+
+foreach ($existingImages as $img) {
+    if (strpos($img, 'http://') === 0 || strpos($img, 'https://') === 0) {
+        $externalImages[] = $img;
+    } else {
+        $uploadedImages[] = $img;
+    }
+}
+
 // 处理表单提交
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // 调试：如果没有任何文件和内容，可能是前端没传过来
-    // if (empty($_FILES['images']) && empty($_POST['content'])) { ... }
-
-    $result = handlePostSubmission($conn);
-    
-    if ($result === true) {
-        ob_end_clean(); 
-        header('Location: ../index.php');
-        exit;
+    if (!function_exists('handlePostUpdate')) {
+        $error_msg = "系统错误：更新函数未加载";
     } else {
-        $error_msg = "发表失败：" . ($result === false ? "未知错误" : $result);
+        $result = handlePostUpdate($conn, $postId);
+
+        if ($result === true) {
+            ob_end_clean();
+            header('Location: ../index.php');
+            exit;
+        } else {
+            $error_msg = "保存失败：" . ($result === false ? "未知错误" : $result);
+        }
     }
 }
 
@@ -42,7 +76,7 @@ $site_title = getSetting($conn, 'site_title');
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>发表说说 - <?php echo htmlspecialchars($site_title); ?></title>
+    <title>编辑说说 - <?php echo htmlspecialchars($site_title); ?></title>
 
     <style>
         body { background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
@@ -54,14 +88,14 @@ $site_title = getSetting($conn, 'site_title');
         h2 { margin: 0; font-size: 18px; color: #333; }
         .form-group { margin-bottom: 20px; }
         .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #555; font-size: 14px; }
-        
+
         textarea { width: 100%; min-height: 150px; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; line-height: 1.5; resize: vertical; box-sizing: border-box; font-family: inherit; outline: none; }
         textarea:focus { border-color: #07c160; }
-        
-        
-        
-        
-        
+
+
+
+
+
         /* 地址通用输入框基础样式 */
 .form-control {
     width: 100%;
@@ -96,9 +130,8 @@ $site_title = getSetting($conn, 'site_title');
     line-height: 24px;
     padding-right: 15px;
 }
-      /* 地址通用输入框基础样式结束 */    
-        
-        
+      /* 地址通用输入框基础样式结束 */
+
 
         /* 图片上传区域样式 */
         .image-upload-container {
@@ -106,7 +139,7 @@ $site_title = getSetting($conn, 'site_title');
             flex-wrap: wrap;
             gap: 10px;
         }
-        
+
         .preview-item {
             position: relative;
             width: 80px;
@@ -171,24 +204,24 @@ $site_title = getSetting($conn, 'site_title');
         .btn-submit { width: 100%; padding: 14px; background-color: #07c160; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
         .btn-submit:disabled { background-color: #ccc; cursor: not-allowed; }
         .btn-cancel { display: block; text-align: center; margin-top: 15px; color: #999; text-decoration: none; font-size: 14px; }
-        
+
         .debug-info { background: #ffebee; color: #c62828; padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 12px; word-break: break-all; }
-        
-        
-        
-        
+
+
+
+
         .action-bar {
     display: flex;             /* 启用 Flex 布局 */
     justify-content: space-between; /* 关键：两端对齐（左一个，右一个） */
     align-items: center;       /* 垂直居中（可选，防止高度不一致） */
     margin-top: 20px;          /* 可选：增加一点上边距 */
-    
+
 }
 
-/* 给“取消”链接添加左边距 */
-.btn-cancel { 
+/* 给"取消"链接添加左边距 */
+.btn-cancel {
     /* 注意：你原来的 HTML 中这个类名写成了 btn-submit，建议改回 btn-cancel 以便区分 */
-    margin-left: 15px; 
+    margin-left: 15px;
 }
 
 /* 或者，如果你不想改类名，可以直接针对第二个元素 */
@@ -276,7 +309,7 @@ body.dark-mode .status-text {
 body.dark-mode .preview-item {
             border-color: #444;
         }
-        
+
         /* 置顶选项样式 */
         .pin-options {
             display: flex;
@@ -284,7 +317,7 @@ body.dark-mode .preview-item {
             gap: 10px;
             margin-top: 8px;
         }
-        
+
         .pin-option {
             display: flex;
             align-items: center;
@@ -295,97 +328,97 @@ body.dark-mode .preview-item {
             transition: all 0.2s;
             background: #fafafa;
         }
-        
+
         .pin-option:hover {
             border-color: #07c160;
             background: #f0fff4;
         }
-        
+
         .pin-option input[type="radio"] {
             margin-right: 6px;
             cursor: pointer;
         }
-        
+
         .pin-label {
             font-size: 14px;
             color: #555;
             font-weight: 500;
         }
-        
+
         .pin-option input[type="radio"]:checked + .pin-label {
             color: #07c160;
             font-weight: 600;
         }
-        
+
         .pin-option:has(input[type="radio"]:checked) {
             border-color: #07c160;
             background: #e6f7ed;
         }
-        
+
         .pin-slot-1 { color: #ff6b6b; }
         .pin-slot-2 { color: #4ecdc4; }
         .pin-slot-3 { color: #45b7d1; }
-        
+
         .pin-option:has(input[value="1"]:checked) {
             border-color: #ff6b6b;
             background: #fff0f0;
         }
-        
+
         .pin-option:has(input[value="2"]:checked) {
             border-color: #4ecdc4;
             background: #f0fffe;
         }
-        
+
         .pin-option:has(input[value="3"]:checked) {
             border-color: #45b7d1;
             background: #f0f9ff;
         }
-        
+
         .pin-hint {
             font-size: 12px;
             color: #999;
             margin-top: 8px;
             font-style: italic;
         }
-        
+
         /* 深色模式下的置顶选项样式 */
         body.dark-mode .pin-option {
             border-color: #555;
             background: #3d3d3d;
         }
-        
+
         body.dark-mode .pin-option:hover {
             border-color: #07c160;
             background: #1e3a2f;
         }
-        
+
         body.dark-mode .pin-label {
             color: #e0e0e0;
         }
-        
+
         body.dark-mode .pin-option:has(input[type="radio"]:checked) {
             background: #2d4a3e;
         }
-        
+
         body.dark-mode .pin-option:has(input[value="1"]:checked) {
             background: #4a3e3e;
             border-color: #ff6b6b;
         }
-        
+
         body.dark-mode .pin-option:has(input[value="2"]:checked) {
             background: #3e4a4a;
             border-color: #4ecdc4;
         }
-        
+
         body.dark-mode .pin-option:has(input[value="3"]:checked) {
             background: #3e4a5a;
             border-color: #45b7d1;
         }
-        
+
         body.dark-mode .pin-hint {
             color: #888;
         }
-        
+
         /* 标记选项样式 */
         .mark-options {
             display: flex;
@@ -393,7 +426,7 @@ body.dark-mode .preview-item {
             gap: 10px;
             margin-top: 8px;
         }
-        
+
         .mark-option {
             display: flex;
             align-items: center;
@@ -404,17 +437,17 @@ body.dark-mode .preview-item {
             transition: all 0.2s;
             background: #fafafa;
         }
-        
+
         .mark-option:hover {
             border-color: #ff9500;
             background: #fff8f0;
         }
-        
+
         .mark-option input[type="radio"] {
             margin-right: 6px;
             cursor: pointer;
         }
-        
+
         .mark-label {
             font-size: 14px;
             color: #555;
@@ -423,44 +456,44 @@ body.dark-mode .preview-item {
             align-items: center;
             gap: 4px;
         }
-        
+
         .mark-option:has(input[type="radio"]:checked) {
             border-color: #ff9500;
             background: #fff0e0;
         }
-        
+
         .mark-option:has(input[type="radio"]:checked) .mark-label {
             color: #ff9500;
             font-weight: 600;
         }
-        
+
         /* 标记栏位颜色 */
         .mark-slot-1 { color: #ff6b6b; }
         .mark-slot-2 { color: #4ecdc4; }
         .mark-slot-3 { color: #45b7d1; }
-        
+
         .mark-option:has(input[value="1"]:checked) {
             border-color: #ff6b6b;
             background: #fff0f0;
         }
-        
+
         .mark-option:has(input[value="2"]:checked) {
             border-color: #4ecdc4;
             background: #f0fffe;
         }
-        
+
         .mark-option:has(input[value="3"]:checked) {
             border-color: #45b7d1;
             background: #f0f9ff;
         }
-        
+
         .mark-hint {
             font-size: 12px;
             color: #999;
             margin-top: 8px;
             font-style: italic;
         }
-        
+
         /* 外链图片样式 */
         .external-image-section {
             margin-bottom: 15px;
@@ -469,13 +502,13 @@ body.dark-mode .preview-item {
             border-radius: 8px;
             border: 1px dashed #ddd;
         }
-        
+
         .external-image-input-wrapper {
             display: flex;
             gap: 10px;
             margin-bottom: 8px;
         }
-        
+
         .external-image-input {
             flex: 1;
             padding: 10px 12px;
@@ -485,11 +518,11 @@ body.dark-mode .preview-item {
             outline: none;
             transition: border-color 0.3s;
         }
-        
+
         .external-image-input:focus {
             border-color: #07c160;
         }
-        
+
         .add-external-btn {
             padding: 10px 16px;
             background: #07c160;
@@ -501,128 +534,128 @@ body.dark-mode .preview-item {
             transition: background 0.3s;
             white-space: nowrap;
         }
-        
+
         .add-external-btn:hover {
             background: #06b359;
         }
-        
+
         .add-external-btn:disabled {
             background: #ccc;
             cursor: not-allowed;
         }
-        
+
         .external-image-hint {
             font-size: 12px;
             color: #999;
             font-style: italic;
         }
-        
+
         /* 深色模式下的标记选项样式 */
         body.dark-mode .mark-option {
             border-color: #555;
             background: #3d3d3d;
         }
-        
+
         body.dark-mode .mark-option:hover {
             border-color: #ff9500;
             background: #3d3520;
         }
-        
+
         body.dark-mode .mark-label {
             color: #e0e0e0;
         }
-        
+
         body.dark-mode .mark-option:has(input[type="radio"]:checked) {
             background: #4a3e2e;
             border-color: #ff9500;
         }
-        
+
         body.dark-mode .mark-option:has(input[value="1"]:checked) {
             background: #4a3e3e;
             border-color: #ff6b6b;
         }
-        
+
         body.dark-mode .mark-option:has(input[value="2"]:checked) {
             background: #3e4a4a;
             border-color: #4ecdc4;
         }
-        
+
         body.dark-mode .mark-option:has(input[value="3"]:checked) {
             background: #3e4a5a;
             border-color: #45b7d1;
         }
-        
+
         body.dark-mode .mark-hint {
             color: #888;
         }
-        
+
         /* 深色模式下的外链图片样式 */
         body.dark-mode .external-image-section {
             background: #3d3d3d;
             border-color: #555;
         }
-        
+
         body.dark-mode .external-image-input {
             background: #2d2d2d;
             border-color: #555;
             color: #e0e0e0;
         }
-        
+
         body.dark-mode .external-image-input::placeholder {
             color: #888;
         }
-        
+
         /* 移动端适配 */
         @media (max-width: 576px) {
             .ad-options {
                 gap: 8px;
             }
-            
+
             .ad-option {
                 padding: 10px 8px;
                 flex: 1;
                 min-width: calc(50% - 4px);
                 justify-content: center;
             }
-            
+
             .ad-label {
                 font-size: 13px;
                 white-space: nowrap;
             }
-            
+
             .ad-option input[type="radio"] {
                 margin-right: 4px;
             }
-            
+
             .external-image-input-wrapper {
                 flex-direction: column;
             }
-            
+
             .add-external-btn {
                 width: 100%;
             }
         }
-        
+
         /* 深色模式下的广告选项样式 */
         body.dark-mode .ad-option {
             border-color: #555;
             background: #3d3d3d;
         }
-        
+
         body.dark-mode .ad-option:hover {
             border-color: #ff9500;
             background: #3d3520;
         }
-        
+
         body.dark-mode .ad-label {
             color: #e0e0e0;
         }
-        
+
         body.dark-mode .ad-option:has(input[type="checkbox"]:checked) {
             background: #4a3e2e;
             border-color: #ff9500;
         }
-        
+
         body.dark-mode .ad-hint {
             color: #888;
         }
@@ -639,7 +672,7 @@ body.dark-mode .preview-item {
                 </svg>
                 返回主页
             </a>
-            <h2>发表说说</h2>
+            <h2>编辑说说</h2>
         </div>
 
         <?php if (isset($error_msg)): ?>
@@ -652,14 +685,14 @@ body.dark-mode .preview-item {
         <form id="postForm" method="POST" enctype="multipart/form-data">
             <div class="form-group">
                 <label>此刻想法</label>
-                <textarea name="content" placeholder="这一刻的想法..." required><?php echo isset($_POST['content']) ? htmlspecialchars($_POST['content']) : ''; ?></textarea>
-                
-               <textarea name="music" placeholder="地址：浙江"  required  class="form-control music-input"><?php echo isset($_POST['music']) ? htmlspecialchars($_POST['music']) : ''; ?></textarea>
+                <textarea name="content" placeholder="这一刻的想法..." required><?php echo htmlspecialchars($post['content']); ?></textarea>
+
+               <textarea name="music" placeholder="地址：浙江"  required  class="form-control music-input"><?php echo htmlspecialchars($post['music'] ?? ''); ?></textarea>
             </div>
 
             <div class="form-group">
                 <label>配图 (最多9张)</label>
-                
+
                 <!-- 外链图片输入 -->
                 <div class="external-image-section">
                     <div class="external-image-input-wrapper">
@@ -668,21 +701,24 @@ body.dark-mode .preview-item {
                     </div>
                     <div class="external-image-hint">* 支持 jpg, png, gif, webp 格式的外链图片</div>
                 </div>
-                
+
                 <div class="image-upload-container" id="imageContainer">
                     <!-- 预览图将在这里生成 -->
                     <div class="add-btn-wrapper" id="addBtn" onclick="triggerUpload()">
                         +
                     </div>
                 </div>
-                
-                <div class="status-text" id="imageCount">已选择 0 张 (上传 0 张, 外链 0 张)</div>
+
+                <div class="status-text" id="imageCount">已选择 0 张 (已有 0 张, 新上传 0 张, 外链 0 张)</div>
 
                 <!-- 真实的文件输入框，用于最终提交 -->
                 <input type="file" name="images[]" id="imageUpload" accept="image/*">
-                
+
                 <!-- 隐藏字段，存储外链图片 URL -->
                 <input type="hidden" name="external_images" id="externalImagesInput" value="">
+
+                <!-- 隐藏字段，存储要删除的图片 -->
+                <input type="hidden" name="deleted_images" id="deletedImagesInput" value="">
             </div>
 
             <!-- 置顶选项 -->
@@ -690,19 +726,19 @@ body.dark-mode .preview-item {
                 <label>置顶设置</label>
                 <div class="pin-options">
                     <label class="pin-option">
-                        <input type="radio" name="is_pinned" value="0" checked>
+                        <input type="radio" name="is_pinned" value="0" <?php echo ($post['is_pinned'] ?? 0) == 0 ? 'checked' : ''; ?>>
                         <span class="pin-label">不置顶</span>
                     </label>
                     <label class="pin-option">
-                        <input type="radio" name="is_pinned" value="1">
+                        <input type="radio" name="is_pinned" value="1" <?php echo ($post['is_pinned'] ?? 0) == 1 ? 'checked' : ''; ?>>
                         <span class="pin-label pin-slot-1">置顶栏位 1</span>
                     </label>
                     <label class="pin-option">
-                        <input type="radio" name="is_pinned" value="2">
+                        <input type="radio" name="is_pinned" value="2" <?php echo ($post['is_pinned'] ?? 0) == 2 ? 'checked' : ''; ?>>
                         <span class="pin-label pin-slot-2">置顶栏位 2</span>
                     </label>
                     <label class="pin-option">
-                        <input type="radio" name="is_pinned" value="3">
+                        <input type="radio" name="is_pinned" value="3" <?php echo ($post['is_pinned'] ?? 0) == 3 ? 'checked' : ''; ?>>
                         <span class="pin-label pin-slot-3">置顶栏位 3</span>
                     </label>
                 </div>
@@ -714,19 +750,19 @@ body.dark-mode .preview-item {
                 <label>广告设置</label>
                 <div class="mark-options">
                     <label class="mark-option">
-                        <input type="radio" name="is_marked" value="0" checked>
+                        <input type="radio" name="is_marked" value="0" <?php echo ($post['is_marked'] ?? 0) == 0 ? 'checked' : ''; ?>>
                         <span class="mark-label">不是广告</span>
                     </label>
                     <label class="mark-option">
-                        <input type="radio" name="is_marked" value="1">
+                        <input type="radio" name="is_marked" value="1" <?php echo ($post['is_marked'] ?? 0) == 1 ? 'checked' : ''; ?>>
                         <span class="mark-label mark-slot-1">广告栏位 1</span>
                     </label>
                     <label class="mark-option">
-                        <input type="radio" name="is_marked" value="2">
+                        <input type="radio" name="is_marked" value="2" <?php echo ($post['is_marked'] ?? 0) == 2 ? 'checked' : ''; ?>>
                         <span class="mark-label mark-slot-2">广告栏位 2</span>
                     </label>
                     <label class="mark-option">
-                        <input type="radio" name="is_marked" value="3">
+                        <input type="radio" name="is_marked" value="3" <?php echo ($post['is_marked'] ?? 0) == 3 ? 'checked' : ''; ?>>
                         <span class="mark-label mark-slot-3">广告栏位 3</span>
                     </label>
                 </div>
@@ -735,7 +771,7 @@ body.dark-mode .preview-item {
 
            <!-- 建议给包裹这两个元素的父容器加一个类，例如 class="action-bar" -->
 <div class="action-bar">
-    <button type="submit" class="btn-submit" id="submitBtn">立即发表</button>
+    <button type="submit" class="btn-submit" id="submitBtn">保存修改</button>
     <a href="../index.php" style="text-align: center;" class="btn-submit">取消</a>
 </div>
         </form>
@@ -744,12 +780,19 @@ body.dark-mode .preview-item {
 
 <script>
     const MAX_IMAGES = 9;
-    let selectedFiles = []; // 存储 File 对象
-    let externalImages = []; // 存储外链图片 URL
+    let selectedFiles = []; // 存储新上传的 File 对象
+    let externalImages = <?php echo json_encode($externalImages); ?>; // 现有外链图片
+    let uploadedImages = <?php echo json_encode($uploadedImages); ?>; // 现有上传图片
+    let deletedImages = []; // 要删除的图片
+
+    // 初始化渲染
+    document.addEventListener('DOMContentLoaded', function() {
+        renderPreviews();
+    });
 
     // 1. 触发选择
     function triggerUpload() {
-        const totalImages = selectedFiles.length + externalImages.length;
+        const totalImages = selectedFiles.length + externalImages.length + uploadedImages.length;
         if (totalImages >= MAX_IMAGES) {
             alert('最多只能添加9张图片');
             return;
@@ -761,13 +804,13 @@ body.dark-mode .preview-item {
     function handleFileSelect(input) {
         if (input.files && input.files[0]) {
             const file = input.files[0];
-            
+
             if (!file.type.match('image.*')) {
                 alert('请选择图片文件');
                 return;
             }
 
-            const totalImages = selectedFiles.length + externalImages.length;
+            const totalImages = selectedFiles.length + externalImages.length + uploadedImages.length;
             if (totalImages < MAX_IMAGES) {
                 selectedFiles.push(file);
                 renderPreviews();
@@ -775,47 +818,46 @@ body.dark-mode .preview-item {
                 alert('最多只能添加9张图片');
             }
         }
-        // 重置 input，允许重复选择同一文件名（如果需要）
-        input.value = ''; 
+        // 重置 input，允许重复选择同一文件名
+        input.value = '';
     }
 
     // 3. 添加外链图片
     function addExternalImage() {
         const urlInput = document.getElementById('externalImageUrl');
         const url = urlInput.value.trim();
-        
+
         if (!url) {
             alert('请输入图片链接');
             return;
         }
-        
+
         // 验证 URL 格式
         if (!url.match(/^https?:\/\/.+/i)) {
             alert('请输入有效的图片链接 (以 http:// 或 https:// 开头)');
             return;
         }
-        
+
         // 验证图片格式
         const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
         const hasValidExtension = validExtensions.some(ext => url.toLowerCase().includes(ext));
-        
+
         if (!hasValidExtension && !url.match(/\.(jpg|jpeg|png|gif|webp|bmp)(\?.*)?$/i)) {
             alert('请确保链接是有效的图片格式 (jpg, png, gif, webp 等)');
-            // 继续添加，只是警告
         }
-        
-        const totalImages = selectedFiles.length + externalImages.length;
+
+        const totalImages = selectedFiles.length + externalImages.length + uploadedImages.length;
         if (totalImages >= MAX_IMAGES) {
             alert('最多只能添加9张图片');
             return;
         }
-        
+
         // 检查是否重复
         if (externalImages.includes(url)) {
             alert('该图片链接已添加');
             return;
         }
-        
+
         externalImages.push(url);
         urlInput.value = '';
         renderPreviews();
@@ -826,7 +868,7 @@ body.dark-mode .preview-item {
         const container = document.getElementById('imageContainer');
         const addBtn = document.getElementById('addBtn');
         const countDiv = document.getElementById('imageCount');
-        
+
         // 暂时移除添加按钮
         container.removeChild(addBtn);
         container.innerHTML = '';
@@ -835,57 +877,87 @@ body.dark-mode .preview-item {
         externalImages.forEach((url, index) => {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'preview-item';
-            
+
             const img = document.createElement('img');
             img.src = url;
             img.onerror = function() {
                 this.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="%23f0f0f0"/><text x="50" y="50" text-anchor="middle" fill="%23999">图片加载失败</text></svg>';
             };
-            
+
             // 外链标记
             const externalBadge = document.createElement('div');
             externalBadge.className = 'external-badge';
-            externalBadge.innerHTML = '🔗';
+            externalBadge.innerHTML = '&#128279;';
             externalBadge.style.cssText = 'position:absolute;top:2px;left:2px;background:rgba(7,193,96,0.9);color:white;padding:2px 4px;border-radius:3px;font-size:10px;';
-            
+
             const removeBtn = document.createElement('div');
             removeBtn.className = 'remove-btn';
             removeBtn.innerHTML = '&times;';
             removeBtn.onclick = function() {
                 removeExternalImage(index);
             };
-            
+
             itemDiv.appendChild(img);
             itemDiv.appendChild(externalBadge);
             itemDiv.appendChild(removeBtn);
             container.appendChild(itemDiv);
         });
 
-        // 渲染上传的图片
+        // 渲染已上传的图片
+        uploadedImages.forEach((url, index) => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'preview-item';
+
+            const img = document.createElement('img');
+            img.src = '../' + url;
+            img.onerror = function() {
+                this.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="%23f0f0f0"/><text x="50" y="50" text-anchor="middle" fill="%23999">图片加载失败</text></svg>';
+            };
+
+            // 已上传标记
+            const localBadge = document.createElement('div');
+            localBadge.className = 'local-badge';
+            localBadge.innerHTML = '&#128190;';
+            localBadge.style.cssText = 'position:absolute;top:2px;left:2px;background:rgba(74,144,226,0.9);color:white;padding:2px 4px;border-radius:3px;font-size:10px;';
+
+            const removeBtn = document.createElement('div');
+            removeBtn.className = 'remove-btn';
+            removeBtn.innerHTML = '&times;';
+            removeBtn.onclick = function() {
+                removeUploadedImage(index);
+            };
+
+            itemDiv.appendChild(img);
+            itemDiv.appendChild(localBadge);
+            itemDiv.appendChild(removeBtn);
+            container.appendChild(itemDiv);
+        });
+
+        // 渲染新上传的图片
         selectedFiles.forEach((file, index) => {
             const reader = new FileReader();
             reader.onload = function(e) {
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'preview-item';
-                
+
                 const img = document.createElement('img');
                 img.src = e.target.result;
-                
-                // 本地上传标记
-                const localBadge = document.createElement('div');
-                localBadge.className = 'local-badge';
-                localBadge.innerHTML = '📁';
-                localBadge.style.cssText = 'position:absolute;top:2px;left:2px;background:rgba(100,100,100,0.9);color:white;padding:2px 4px;border-radius:3px;font-size:10px;';
-                
+
+                // 新上传标记
+                const newBadge = document.createElement('div');
+                newBadge.className = 'new-badge';
+                newBadge.innerHTML = '&#127381;';
+                newBadge.style.cssText = 'position:absolute;top:2px;left:2px;background:rgba(255,149,0,0.9);color:white;padding:2px 4px;border-radius:3px;font-size:10px;';
+
                 const removeBtn = document.createElement('div');
                 removeBtn.className = 'remove-btn';
                 removeBtn.innerHTML = '&times;';
                 removeBtn.onclick = function() {
                     removeImage(index);
                 };
-                
+
                 itemDiv.appendChild(img);
-                itemDiv.appendChild(localBadge);
+                itemDiv.appendChild(newBadge);
                 itemDiv.appendChild(removeBtn);
                 container.appendChild(itemDiv);
             };
@@ -896,24 +968,26 @@ body.dark-mode .preview-item {
         container.appendChild(addBtn);
 
         // 更新状态
-        const uploadCount = selectedFiles.length;
+        const newUploadCount = selectedFiles.length;
         const externalCount = externalImages.length;
-        const totalCount = uploadCount + externalCount;
-        countDiv.textContent = `已选择 ${totalCount} 张 (上传 ${uploadCount} 张, 外链 ${externalCount} 张)`;
+        const uploadedCount = uploadedImages.length;
+        const totalCount = newUploadCount + externalCount + uploadedCount;
+        countDiv.textContent = `已选择 ${totalCount} 张 (已有 ${uploadedCount} 张, 新上传 ${newUploadCount} 张, 外链 ${externalCount} 张)`;
 
         // 更新隐藏字段
         document.getElementById('externalImagesInput').value = JSON.stringify(externalImages);
+        document.getElementById('deletedImagesInput').value = JSON.stringify(deletedImages);
 
         if (totalCount >= MAX_IMAGES) {
             addBtn.classList.add('disabled');
-            addBtn.innerHTML = '✓';
+            addBtn.innerHTML = '&#10003;';
         } else {
             addBtn.classList.remove('disabled');
             addBtn.innerHTML = '+';
         }
     }
 
-    // 5. 删除上传的图片
+    // 5. 删除新上传的图片
     function removeImage(index) {
         selectedFiles.splice(index, 1);
         renderPreviews();
@@ -925,44 +999,43 @@ body.dark-mode .preview-item {
         renderPreviews();
     }
 
-    // 7. 【核心修复】拦截表单提交，将 JS 数组中的文件注入到 input 中
-    document.getElementById('postForm').addEventListener('submit', function(e) {
-        const totalImages = selectedFiles.length + externalImages.length;
-        
-        if (selectedFiles.length === 0 && externalImages.length === 0) {
-            // 如果没有图片，允许直接提交（只发文字）
-            return; 
-        }
+    // 7. 删除已上传的图片
+    function removeUploadedImage(index) {
+        const removedUrl = uploadedImages[index];
+        deletedImages.push(removedUrl);
+        uploadedImages.splice(index, 1);
+        renderPreviews();
+    }
 
+    // 8. 【核心修复】拦截表单提交
+    document.getElementById('postForm').addEventListener('submit', function(e) {
         // 防止默认提交，我们要手动构建 FormData
         e.preventDefault();
 
         const form = this;
         const submitBtn = document.getElementById('submitBtn');
-        
+
         // 禁用按钮防止重复提交
         submitBtn.disabled = true;
-        submitBtn.textContent = '发表中...';
+        submitBtn.textContent = '保存中...';
 
-        // 创建 DataTransfer 对象 (现代浏览器支持)
+        // 创建 DataTransfer 对象
         const dataTransfer = new DataTransfer();
-        
-        // 将所有选中的文件放入 DataTransfer
+
+        // 将所有新选中的文件放入 DataTransfer
         selectedFiles.forEach(file => {
             dataTransfer.items.add(file);
         });
 
         // 将 files 列表赋值给隐藏的 input 元素
-        // 这样后端 $_FILES['images'] 就能接收到了
         const fileInput = document.getElementById('imageUpload');
         fileInput.files = dataTransfer.files;
 
-        // 更新外链图片隐藏字段
+        // 更新隐藏字段
         document.getElementById('externalImagesInput').value = JSON.stringify(externalImages);
+        document.getElementById('deletedImagesInput').value = JSON.stringify(deletedImages);
 
-        // 现在使用 fetch 或 原生表单提交均可
-        // 为了兼容性和简单性，我们这里重新触发一次原生提交
-        // 因为 input.files 已经被我们修改了，浏览器会带着新文件提交
+        // 提交表单
         form.submit();
     });
 
@@ -970,7 +1043,7 @@ body.dark-mode .preview-item {
     document.getElementById('imageUpload').addEventListener('change', function() {
         handleFileSelect(this);
     });
-    
+
     // 外链图片输入框回车事件
     document.getElementById('externalImageUrl').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
@@ -993,9 +1066,9 @@ body.dark-mode .preview-item {
         const lightIcon = document.getElementById('lightIcon');
         const darkIcon = document.getElementById('darkIcon');
         const body = document.body;
-        
+
         const currentTheme = localStorage.getItem('theme') || 'light';
-        
+
         function applyTheme(theme) {
             if (theme === 'dark') {
                 body.classList.add('dark-mode');
@@ -1007,13 +1080,13 @@ body.dark-mode .preview-item {
                 darkIcon.style.display = 'none';
             }
         }
-        
+
         applyTheme(currentTheme);
-        
+
         themeToggle.addEventListener('click', function() {
             const isDark = body.classList.contains('dark-mode');
             const newTheme = isDark ? 'light' : 'dark';
-            
+
             applyTheme(newTheme);
             localStorage.setItem('theme', newTheme);
         });

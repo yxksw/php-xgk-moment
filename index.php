@@ -24,7 +24,7 @@ $totalPosts = $totalResult->fetch_assoc()['total'];
 $totalPages = ceil($totalPosts / $limit);
 $offset = ($page - 1) * $limit;
 
-$result = $conn->query("SELECT * FROM posts ORDER BY created_at DESC LIMIT $limit OFFSET $offset");
+$result = $conn->query("SELECT * FROM posts ORDER BY is_pinned DESC, created_at DESC LIMIT $limit OFFSET $offset");
 
 // 修改点：路径加上 includes/
 include 'includes/header.php';
@@ -38,12 +38,30 @@ include 'includes/header.php';
             $count = count($images);
             $gridClass = $count == 1 ? 'grid-1' : ($count == 2 ? 'grid-2' : 'grid-' . min($count, 9));
         ?>
-        <div class="post-item" id="post-<?php echo $post['id']; ?>">
+        <?php 
+            $is_pinned = intval($post['is_pinned'] ?? 0);
+            $is_marked = intval($post['is_marked'] ?? 0);
+        ?>
+        <div class="post-item <?php echo $is_pinned > 0 ? 'post-pinned post-pinned-' . $is_pinned : ''; ?> <?php echo $is_marked > 0 ? 'post-marked post-marked-' . $is_marked : ''; ?>" id="post-<?php echo $post['id']; ?>">
             <div class="post-header">
                 <img src="<?php echo htmlspecialchars($friend_avatar ?: 'https://via.placeholder.com/32'); ?>">
-                <div>
-                    <div class="post-author"><?php echo htmlspecialchars($friend_name); ?></div>
-                    <div class="post-time"></div>
+                <div class="post-author-wrapper">
+                    <div class="post-author">
+                        <?php echo htmlspecialchars($friend_name); ?>
+                    </div>
+                    <div class="post-tags">
+                        <?php if ($is_pinned > 0): ?>
+                            <span class="tag tag-pinned" title="置顶">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 2L12 22M12 2L6 8M12 2L18 8"/>
+                                </svg>
+                                置顶
+                            </span>
+                        <?php endif; ?>
+                        <?php if ($is_marked > 0): ?>
+                            <span class="tag tag-marked">广告</span>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
             <div class="post-content"><?php echo nl2br(htmlspecialchars($post['content'])); ?></div>
@@ -77,16 +95,44 @@ include 'includes/header.php';
                 
             <div class="plan">
                 <span><?php echo date('Y年m月d日', strtotime($post['created_at'])); ?></span>
-                <div>
+                <div class="post-actions">
+                    <?php if ($is_logged_in): ?>
+                        <a href="includes/edit-post.php?id=<?php echo $post['id']; ?>" class="action-btn edit-btn" title="编辑" style="background:transparent !important;border:none !important;box-shadow:none !important;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                        </a>
+                        <a href="javascript:void(0);" class="action-btn delete-btn" title="删除" onclick="deletePost(<?php echo $post['id']; ?>)" style="background:transparent !important;border:none !important;box-shadow:none !important;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                        </a>
+                    <?php endif; ?>
+                    <!-- 点赞按钮 -->
+                    <a href="javascript:void(0);" class="action-btn like-btn" data-post-id="<?php echo $post['id']; ?>" title="点赞" style="color:#ff6b6b;margin-right:10px;float:right;background:transparent !important;border:none !important;box-shadow:none !important;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="like-icon">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                        </svg>
+                        <span class="like-count" style="font-size:12px;margin-left:2px;">0</span>
+                    </a>
                     <a href="javascript:void(0);" style="color:#07c160;border-radius: 5px; font-size:16px; text-decoration:none; float:right;" onclick="loadComments(<?php echo $post['id']; ?>)">
-                        
-                        
                         <svg width="40" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
   <circle cx="5" cy="12" r="2" fill="currentColor"/>
   <circle cx="12" cy="12" r="2" fill="currentColor"/>
   <circle cx="19" cy="12" r="2" fill="currentColor"/>
 </svg>
                     </a>
+                </div>
+            </div>
+            <!-- 点赞区域 -->
+            <div class="like-area" id="like-area-<?php echo $post['id']; ?>" style="margin-left: 40px; margin-top:8px; display:none;">
+                <div class="like-users" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="#ff6b6b" stroke="#ff6b6b" stroke-width="2">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                    </svg>
+                    <span class="like-users-list" style="font-size:13px;color:#666;"></span>
                 </div>
             </div>
             <div class="comment-container" id="comment-container-<?php echo $post['id']; ?>" style="margin-left: 40px; margin-top:12px;"></div>
@@ -114,8 +160,8 @@ include 'includes/header.php';
     <?php endif; ?>
 
 <?php
-// 音乐播放器
-include 'includes/music-player.php';
+// // 音乐播放器
+// include 'includes/music-player.php';
 
 // Live2D 看板娘
 include 'includes/live2d-widget.php';
@@ -123,3 +169,114 @@ include 'includes/live2d-widget.php';
 // 修改点：路径加上 includes/
 include 'includes/footer.php';
 ?>
+
+<!-- 点赞功能 JavaScript -->
+<script>
+// 生成或获取匿名用户ID
+function getAnonymousId() {
+    let anonymousId = localStorage.getItem('anonymous_id');
+    if (!anonymousId) {
+        anonymousId = 'anon_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('anonymous_id', anonymousId);
+    }
+    return anonymousId;
+}
+
+// 获取用户信息
+function getUserInfo() {
+    let userInfo = localStorage.getItem('comment_user_info');
+    if (userInfo) {
+        return JSON.parse(userInfo);
+    }
+    return { name: '', email: '' };
+}
+
+// 加载点赞数据
+function loadLikes(postId) {
+    const anonymousId = getAnonymousId();
+    fetch(`api/like.php?do=getLikes&post_id=${postId}&anonymous_id=${anonymousId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateLikeUI(postId, data.likes, data.isLiked, data.likeUsers);
+            }
+        })
+        .catch(error => console.error('加载点赞数据失败:', error));
+}
+
+// 更新点赞UI
+function updateLikeUI(postId, likes, isLiked, likeUsers) {
+    const likeBtn = document.querySelector(`.like-btn[data-post-id="${postId}"]`);
+    const likeArea = document.getElementById(`like-area-${postId}`);
+    const likeCount = likeBtn.querySelector('.like-count');
+    const likeIcon = likeBtn.querySelector('.like-icon');
+
+    // 更新点赞数
+    likeCount.textContent = likes;
+
+    // 更新点赞状态样式
+    if (isLiked) {
+        likeIcon.setAttribute('fill', '#ff6b6b');
+        likeBtn.style.color = '#ff6b6b';
+    } else {
+        likeIcon.setAttribute('fill', 'none');
+        likeBtn.style.color = '#999';
+    }
+
+    // 更新点赞用户列表
+    if (likeUsers && likeUsers.length > 0) {
+        const usersList = likeArea.querySelector('.like-users-list');
+        const userNames = likeUsers.map(u => u.author).join('、');
+        usersList.textContent = userNames + (likes > likeUsers.length ? ` 等${likes}人` : '');
+        likeArea.style.display = 'block';
+    } else {
+        likeArea.style.display = 'none';
+    }
+}
+
+// 切换点赞
+function toggleLike(postId) {
+    const anonymousId = getAnonymousId();
+    const userInfo = getUserInfo();
+
+    fetch(`api/like.php?do=like&post_id=${postId}&anonymous_id=${anonymousId}&author=${encodeURIComponent(userInfo.name)}&email=${encodeURIComponent(userInfo.email)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateLikeUI(postId, data.likes, data.isLiked, data.likeUsers);
+
+                // 显示提示
+                const likeBtn = document.querySelector(`.like-btn[data-post-id="${postId}"]`);
+                const tooltip = document.createElement('span');
+                tooltip.textContent = data.action === 'liked' ? '已点赞' : '已取消';
+                tooltip.style.cssText = 'position:absolute;background:#333;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px;z-index:1000;white-space:nowrap;';
+                tooltip.className = 'like-tooltip';
+                likeBtn.style.position = 'relative';
+                likeBtn.appendChild(tooltip);
+
+                setTimeout(() => {
+                    tooltip.remove();
+                }, 1500);
+            }
+        })
+        .catch(error => console.error('点赞操作失败:', error));
+}
+
+// 初始化点赞功能
+document.addEventListener('DOMContentLoaded', function() {
+    // 为所有点赞按钮绑定事件
+    document.querySelectorAll('.like-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const postId = this.getAttribute('data-post-id');
+            toggleLike(postId);
+        });
+    });
+
+    // 加载所有说说的点赞数据
+    document.querySelectorAll('.like-btn').forEach(btn => {
+        const postId = btn.getAttribute('data-post-id');
+        loadLikes(postId);
+    });
+});
+</script>

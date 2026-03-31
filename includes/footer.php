@@ -11,6 +11,119 @@
     </div>
 </div> <!-- End .card -->
 
+<!-- 回到顶部按钮 -->
+<button id="backToTop" class="back-to-top" onclick="scrollToTop()" title="回到顶部">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 19V5M5 12l7-7 7 7"/>
+    </svg>
+</button>
+
+<style>
+/* 回到顶部按钮样式 */
+.back-to-top {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #e0e0e0;
+    color: #666;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 999;
+}
+
+.back-to-top:hover {
+    background: #07c160;
+    border-color: #07c160;
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(7, 193, 96, 0.3);
+}
+
+.back-to-top.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* 深色模式下的回到顶部按钮 */
+body.dark-mode .back-to-top {
+    background: rgba(60, 60, 60, 0.9);
+    border-color: #555;
+    color: #e0e0e0;
+}
+
+body.dark-mode .back-to-top:hover {
+    background: #07c160;
+    border-color: #07c160;
+    color: #fff;
+}
+
+/* 移动端适配 */
+@media (max-width: 576px) {
+    .back-to-top {
+        bottom: 20px;
+        right: 20px;
+        width: 40px;
+        height: 40px;
+    }
+}
+</style>
+
+<script>
+// 回到顶部功能
+function scrollToTop() {
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+    });
+}
+
+// 监听滚动事件，控制按钮显示/隐藏
+(function() {
+    const backToTopBtn = document.getElementById('backToTop');
+    
+    if (!backToTopBtn) return;
+    
+    // 滚动时检查位置
+    function checkScroll() {
+        if (window.pageYOffset > 300) {
+            backToTopBtn.classList.add('show');
+        } else {
+            backToTopBtn.classList.remove('show');
+        }
+    }
+    
+    // 节流函数，优化性能
+    function throttle(func, limit) {
+        let inThrottle;
+        return function() {
+            const args = arguments;
+            const context = this;
+            if (!inThrottle) {
+                func.apply(context, args);
+                inThrottle = true;
+                setTimeout(() => inThrottle = false, limit);
+            }
+        }
+    }
+    
+    // 使用节流优化滚动监听
+    window.addEventListener('scroll', throttle(checkScroll, 100));
+    
+    // 初始检查
+    checkScroll();
+})();
+</script>
+
 <!-- 图片预览脚本 (仅管理员可见部分需要，放在这里全局可用) -->
 <script>
 function previewImages(input) {
@@ -142,6 +255,42 @@ document.addEventListener('click', function(e) {
         }
     }
 });
+
+// Delete post function
+function deletePost(postId) {
+    if (!confirm('确定要删除这条说说吗？此操作不可恢复。')) {
+        return;
+    }
+    
+    fetch('admin/delete_post.php?id=' + postId, {
+        method: 'GET'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Remove the post element from DOM
+            const postElement = document.getElementById('post-' + postId);
+            if (postElement) {
+                postElement.style.opacity = '0';
+                postElement.style.transform = 'translateX(-100%)';
+                postElement.style.transition = 'all 0.3s ease';
+                setTimeout(() => {
+                    postElement.remove();
+                    // Check if no posts left
+                    const posts = document.querySelectorAll('.post-item');
+                    if (posts.length === 0) {
+                        location.reload();
+                    }
+                }, 300);
+            }
+        } else {
+            alert(data.message || '删除失败');
+        }
+    })
+    .catch(() => {
+        alert('网络错误，请稍后重试');
+    });
+}
 </script>
 
 <!-- 导航栏与弹窗控制脚本 (含滚动条修复) -->
