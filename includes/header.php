@@ -47,6 +47,25 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
 
 $is_logged_in = isset($_SESSION['admin']);
 $user_info = $_SESSION['user_info'] ?? [];
+
+// 获取公告数据
+$announcements = [];
+if (isset($conn) && $conn) {
+    try {
+        // 检查表是否存在
+        $table_check = $conn->query("SHOW TABLES LIKE 'announcements'");
+        if ($table_check && $table_check->num_rows > 0) {
+            $ann_result = $conn->query("SELECT * FROM announcements WHERE is_active = 1 ORDER BY sort_order ASC, created_at DESC");
+            if ($ann_result && $ann_result->num_rows > 0) {
+                while ($ann = $ann_result->fetch_assoc()) {
+                    $announcements[] = $ann;
+                }
+            }
+        }
+    } catch (Exception $e) {
+        // 忽略数据库错误
+    }
+}
 ?>
 
 
@@ -99,7 +118,7 @@ $user_info = $_SESSION['user_info'] ?? [];
             color: #6ab3ff;
         }
         body.dark-mode .signature {
-            background-color: #2d2d2d;
+            background-color: #1a1a1a;
             color: #b0b0b0;
         }
         body.dark-mode .top-navbar.scrolled {
@@ -234,7 +253,7 @@ $user_info = $_SESSION['user_info'] ?? [];
         .author-name { color: #fff; font-size: 18px; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
         .author-avatar { width: 50px; height: 50px; border-radius: 2px; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.3); overflow: hidden; }
         .author-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .signature { margin-right: 10px; text-align: right; color: #999; font-size: 16px; padding: 10px 0; background-color: #fff; }
+        .signature { text-align: right; color: #999; font-size: 16px; padding: 10px 15px; background-color: #fff; }
         .post-form { background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: <?php echo $is_logged_in ? 'block' : 'none'; ?>; }
         .post-item { background: #fff; padding: 15px; margin-bottom: 0px; border-radius: 0px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
         .post-header { display: flex; align-items: center; margin-bottom: 10px; }
@@ -437,6 +456,215 @@ $user_info = $_SESSION['user_info'] ?? [];
         body.dark-mode .search-placeholder,
         body.dark-mode .search-no-results,
         body.dark-mode .search-loading {
+            color: #888;
+        }
+        
+        /* 公告弹窗样式 */
+        .announcement-modal-content {
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+        }
+        .announcement-modal-body {
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            max-height: calc(80vh - 60px);
+        }
+        .announcement-tabs {
+            display: flex;
+            gap: 8px;
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            overflow-x: auto;
+            flex-shrink: 0;
+        }
+        .ann-tab {
+            padding: 6px 14px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            background: #f5f5f5;
+            color: #666;
+            font-size: 13px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .ann-tab:hover {
+            background: #e8e8e8;
+        }
+        .ann-tab.active {
+            background: #07c160;
+            color: #fff;
+            border-color: #07c160;
+        }
+        .announcement-content-wrapper {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .announcement-content {
+            display: none;
+        }
+        .announcement-content.active {
+            display: block;
+        }
+        .announcement-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .announcement-body {
+            font-size: 14px;
+            line-height: 1.8;
+            color: #555;
+        }
+        .announcement-body h1, .announcement-body h2, .announcement-body h3,
+        .announcement-body h4, .announcement-body h5, .announcement-body h6 {
+            margin: 15px 0 10px;
+            color: #333;
+        }
+        .announcement-body p {
+            margin: 10px 0;
+        }
+        .announcement-body ul, .announcement-body ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .announcement-body li {
+            margin: 5px 0;
+        }
+        .announcement-body code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        .announcement-body pre {
+            background: #f4f4f4;
+            padding: 12px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .announcement-body pre code {
+            background: none;
+            padding: 0;
+        }
+        .announcement-body blockquote {
+            border-left: 4px solid #07c160;
+            padding-left: 15px;
+            margin: 10px 0;
+            color: #666;
+        }
+        .announcement-body a {
+            color: #07c160;
+            text-decoration: none;
+        }
+        .announcement-body a:hover {
+            text-decoration: underline;
+        }
+        .announcement-body img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+        }
+        .announcement-body table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        .announcement-body th, .announcement-body td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        .announcement-body th {
+            background: #f5f5f5;
+            font-weight: 600;
+        }
+        .announcement-meta {
+            font-size: 12px;
+            color: #999;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #f0f0f0;
+        }
+        .announcement-empty {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        .empty-text {
+            font-size: 14px;
+            color: #999;
+        }
+        
+        /* 深色模式下的公告弹窗样式 */
+        body.dark-mode .announcement-tabs {
+            border-color: #444;
+        }
+        body.dark-mode .ann-tab {
+            background: #3d3d3d;
+            border-color: #555;
+            color: #b0b0b0;
+        }
+        body.dark-mode .ann-tab:hover {
+            background: #4d4d4d;
+        }
+        body.dark-mode .ann-tab.active {
+            background: #07c160;
+            color: #fff;
+            border-color: #07c160;
+        }
+        body.dark-mode .announcement-title {
+            color: #e0e0e0;
+            border-color: #444;
+        }
+        body.dark-mode .announcement-body {
+            color: #b0b0b0;
+        }
+        body.dark-mode .announcement-body h1, 
+        body.dark-mode .announcement-body h2, 
+        body.dark-mode .announcement-body h3,
+        body.dark-mode .announcement-body h4, 
+        body.dark-mode .announcement-body h5, 
+        body.dark-mode .announcement-body h6 {
+            color: #e0e0e0;
+        }
+        body.dark-mode .announcement-body code {
+            background: #3d3d3d;
+            color: #e0e0e0;
+        }
+        body.dark-mode .announcement-body pre {
+            background: #3d3d3d;
+        }
+        body.dark-mode .announcement-body blockquote {
+            border-color: #07c160;
+            color: #888;
+        }
+        body.dark-mode .announcement-body a {
+            color: #4ade80;
+        }
+        body.dark-mode .announcement-body th {
+            background: #3d3d3d;
+        }
+        body.dark-mode .announcement-body th,
+        body.dark-mode .announcement-body td {
+            border-color: #555;
+        }
+        body.dark-mode .announcement-meta {
+            color: #888;
+            border-color: #444;
+        }
+        body.dark-mode .empty-text {
             color: #888;
         }
         
@@ -873,9 +1101,9 @@ $user_info = $_SESSION['user_info'] ?? [];
                 </a>
             <?php endif; ?>
             
-            <svg class="nav-icon" id="btnSettings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="cursor: pointer;" title="设置" onclick="openModal('settingsModal')">
-                <circle cx="12" cy="12" r="3"></circle>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            <svg class="nav-icon" id="btnAnnouncement" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="cursor: pointer;" title="公告" onclick="openModal('announcementModal')">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
             </svg>
         </div>
     </div>
@@ -1025,19 +1253,51 @@ echo htmlspecialchars($current_url);
         </div>
     </div>
 
-    <!-- 设置弹窗 -->
-    <div id="settingsModal" class="modal-overlay">
-        <div class="modal-content">
+    <!-- 公告弹窗 -->
+    <div id="announcementModal" class="modal-overlay">
+        <div class="modal-content announcement-modal-content">
             <div class="modal-header">
-                <h3>系统设置</h3>
-                <span class="close-btn" onclick="closeModal('settingsModal')">&times;</span>
+                <h3>📢 公告</h3>
+                <span class="close-btn" onclick="closeModal('announcementModal')">&times;</span>
             </div>
-            <div class="modal-body">
-                <div class="setting-item"><span> 消息通知更新中</span><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></div>
-                <div class="setting-item"><span>🌙 深色模式更新中</span><label class="switch"><input type="checkbox"><span class="slider"></span></label></div>
-                <?php if ($is_logged_in): ?>
-                    <div class="setting-item" style="border-top:1px solid #eee; margin-top:10px; padding-top:10px;" onclick="window.location.href='?action=logout'">
-                        <span style="color: #d32f2f; cursor:pointer;">退出登录</span>
+            <div class="modal-body announcement-modal-body">
+                <?php if (!empty($announcements)): ?>
+                    <?php if (count($announcements) > 1): ?>
+                    <div class="announcement-tabs">
+                        <?php foreach ($announcements as $index => $ann): ?>
+                            <button class="ann-tab <?php echo $index === 0 ? 'active' : ''; ?>" 
+                                    onclick="switchAnnouncement(<?php echo $index; ?>)" 
+                                    data-index="<?php echo $index; ?>">
+                                <?php echo htmlspecialchars($ann['title']); ?>
+                            </button>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
+                    <div class="announcement-content-wrapper">
+                        <?php foreach ($announcements as $index => $ann): ?>
+                            <div class="announcement-content <?php echo $index === 0 ? 'active' : ''; ?>" 
+                                 data-index="<?php echo $index; ?>"
+                                 data-type="<?php echo $ann['type']; ?>">
+                                <?php if (count($announcements) === 1): ?>
+                                <h4 class="announcement-title"><?php echo htmlspecialchars($ann['title']); ?></h4>
+                                <?php endif; ?>
+                                <div class="announcement-body" id="ann-content-<?php echo $index; ?>">
+                                    <?php if ($ann['type'] === 'html'): ?>
+                                        <?php echo $ann['content']; ?>
+                                    <?php else: ?>
+                                        <pre class="markdown-source" style="display:none;"><?php echo htmlspecialchars($ann['content']); ?></pre>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="announcement-meta">
+                                    发布时间: <?php echo date('Y-m-d H:i', strtotime($ann['created_at'])); ?>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <div class="announcement-empty">
+                        <div class="empty-icon">📭</div>
+                        <div class="empty-text">暂无公告</div>
                     </div>
                 <?php endif; ?>
             </div>
@@ -1147,11 +1407,11 @@ echo htmlspecialchars($current_url);
         fetch('search.php?keyword=' + encodeURIComponent(keyword))
             .then(response => response.json())
             .then(data => {
-                if (data.code === 200 && data.data.length > 0) {
+                if (data.code === 200 && data.data.posts && data.data.posts.length > 0) {
                     let html = '';
-                    data.data.forEach(post => {
+                    data.data.posts.forEach(post => {
                         html += `
-                            <div class="search-result-item" onclick="window.location.href='?id=${post.id}'">
+                            <div class="search-result-item" onclick="jumpToPost(${post.id})">
                                 <div class="search-result-content">${escapeHtml(post.content)}</div>
                                 <div class="search-result-date">${post.formatted_date}</div>
                             </div>
@@ -1174,6 +1434,140 @@ echo htmlspecialchars($current_url);
         div.textContent = text;
         return div.innerHTML;
     }
+    
+    // 跳转到说说并添加高亮效果
+    function jumpToPost(postId) {
+        // 关闭搜索弹窗
+        closeModal('searchModal');
+        
+        // 查找目标说说元素
+        const targetPost = document.querySelector(`.post-item[data-post-id="${postId}"]`);
+        
+        if (targetPost) {
+            // 平滑滚动到目标位置
+            targetPost.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center' 
+            });
+            
+            // 添加高亮动画效果
+            targetPost.style.transition = 'all 0.3s ease';
+            targetPost.style.transform = 'scale(1.02)';
+            targetPost.style.boxShadow = '0 0 20px rgba(7, 193, 96, 0.5)';
+            
+            // 3秒后移除高亮效果
+            setTimeout(() => {
+                targetPost.style.transform = 'scale(1)';
+                targetPost.style.boxShadow = '';
+            }, 3000);
+        } else {
+            // 如果当前页面没有该说说，跳转到详情页
+            window.location.href = '?id=' + postId;
+        }
+    }
+    
+    // 打开搜索弹窗
+    function openSearchModal() {
+        const modal = document.getElementById('searchModal');
+        const input = document.getElementById('searchInput');
+        
+        if (modal) {
+            // 使用与 openModal 相同的方式显示弹窗
+            modal.classList.add('active');
+            
+            // 计算滚动条宽度并补偿，避免页面抖动
+            const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+            if (scrollbarWidth > 0) {
+                document.body.style.overflow = 'hidden';
+                document.body.style.paddingRight = scrollbarWidth + 'px';
+            } else {
+                document.body.style.overflow = 'hidden';
+            }
+            
+            // 自动聚焦到搜索框
+            setTimeout(() => {
+                if (input) {
+                    input.focus();
+                    input.select();
+                }
+            }, 100);
+        }
+    }
+    
+    // Ctrl+K 快捷键唤醒搜索
+    document.addEventListener('keydown', function(e) {
+        // 检测 Ctrl+K (Windows/Linux) 或 Cmd+K (Mac)
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault(); // 阻止浏览器默认行为
+            openSearchModal();
+        }
+        
+        // ESC 键关闭搜索弹窗
+        if (e.key === 'Escape') {
+            const modal = document.getElementById('searchModal');
+            if (modal && modal.classList.contains('active')) {
+                closeModal('searchModal');
+            }
+        }
+    });
+    </script>
+
+    <!-- Markdown 渲染库 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <!-- 公告弹窗相关脚本 -->
+    <script>
+    // 切换公告标签
+    function switchAnnouncement(index) {
+        // 切换标签按钮状态
+        document.querySelectorAll('.ann-tab').forEach(tab => {
+            tab.classList.remove('active');
+            if (parseInt(tab.dataset.index) === index) {
+                tab.classList.add('active');
+            }
+        });
+        
+        // 切换内容显示
+        document.querySelectorAll('.announcement-content').forEach(content => {
+            content.classList.remove('active');
+            if (parseInt(content.dataset.index) === index) {
+                content.classList.add('active');
+            }
+        });
+    }
+    
+    // 渲染 Markdown 内容
+    function renderAnnouncements() {
+        if (typeof marked === 'undefined') {
+            // 如果 marked 库还没加载，等待一下再试
+            setTimeout(renderAnnouncements, 100);
+            return;
+        }
+        
+        // 配置 marked 选项
+        marked.setOptions({
+            breaks: true,
+            gfm: true,
+            headerIds: false,
+            mangle: false
+        });
+        
+        // 查找所有 Markdown 类型的公告并渲染
+        document.querySelectorAll('.announcement-content[data-type="markdown"]').forEach(content => {
+            const bodyEl = content.querySelector('.announcement-body');
+            const sourceEl = bodyEl.querySelector('.markdown-source');
+            if (sourceEl && !bodyEl.dataset.rendered) {
+                const markdownText = sourceEl.textContent;
+                bodyEl.innerHTML = marked.parse(markdownText);
+                bodyEl.dataset.rendered = 'true';
+            }
+        });
+    }
+    
+    // 页面加载完成后渲染公告
+    document.addEventListener('DOMContentLoaded', function() {
+        renderAnnouncements();
+    });
     </script>
 
 

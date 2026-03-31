@@ -6,6 +6,8 @@ $nav_items = [
     ['id' => 'posts', 'name' => '说说', 'icon' => '📝', 'url' => 'posts.php'],
     ['id' => 'comments', 'name' => '评论', 'icon' => '💬', 'url' => 'comments.php'],
     ['id' => 'links', 'name' => '友链', 'icon' => '🔗', 'url' => 'links.php'],
+    ['id' => 'announcements', 'name' => '公告', 'icon' => '📢', 'url' => 'announcements.php'],
+    ['id' => 'mail_settings', 'name' => '邮件', 'icon' => '📧', 'url' => 'mail_settings.php'],
     ['id' => 'settings', 'name' => '设置', 'icon' => '⚙️', 'url' => 'settings.php'],
 ];
 ?>

@@ -26,6 +26,17 @@ function runDatabaseUpgrades($conn) {
         }
     }
     
+    // 1.1 检查并添加全文搜索索引
+    $checkIndex = $conn->query("SHOW INDEX FROM posts WHERE Key_name = 'idx_content'");
+    if ($checkIndex->num_rows == 0) {
+        $sql = "ALTER TABLE posts ADD FULLTEXT INDEX `idx_content` (`content`)";
+        if ($conn->query($sql)) {
+            $messages[] = "✅ 已添加全文搜索索引 'idx_content'";
+        } else {
+            $messages[] = "❌ 添加全文搜索索引失败: " . $conn->error;
+        }
+    }
+    
     // 2. 检查并添加 is_marked 字段（或从 is_ad 重命名）
     $checkResult = $conn->query("SHOW COLUMNS FROM posts LIKE 'is_marked'");
     if ($checkResult->num_rows == 0) {
@@ -76,6 +87,55 @@ function runDatabaseUpgrades($conn) {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='友链表'");
     $messages[] = "✅ 友链表检查完成";
     
+    // 5. 检查并添加 parent_id 字段到评论表
+    $checkResult = $conn->query("SHOW COLUMNS FROM comments LIKE 'parent_id'");
+    if ($checkResult->num_rows == 0) {
+        $sql = "ALTER TABLE comments ADD COLUMN parent_id INT DEFAULT 0 COMMENT '回复的评论ID，0表示顶级评论' AFTER post_id";
+        if ($conn->query($sql)) {
+            $messages[] = "✅ 已添加字段 'parent_id' 到评论表";
+        } else {
+            $messages[] = "❌ 添加字段 'parent_id' 失败: " . $conn->error;
+        }
+    }
+    
+    // 6. 添加邮件通知相关设置
+    $mailSettings = [
+        ['smtp_enabled', '0'],
+        ['smtp_host', ''],
+        ['smtp_port', '587'],
+        ['smtp_username', ''],
+        ['smtp_password', ''],
+        ['smtp_from_email', ''],
+        ['smtp_from_name', ''],
+        ['admin_email', ''],
+        ['notify_admin_on_comment', '1'],
+        ['notify_user_on_reply', '1']
+    ];
+    foreach ($mailSettings as $setting) {
+        $checkStmt = $conn->prepare("SELECT id FROM settings WHERE name = ?");
+        $checkStmt->bind_param("s", $setting[0]);
+        $checkStmt->execute();
+        if ($checkStmt->get_result()->num_rows == 0) {
+            $insertStmt = $conn->prepare("INSERT INTO settings (name, value) VALUES (?, ?)");
+            $insertStmt->bind_param("ss", $setting[0], $setting[1]);
+            $insertStmt->execute();
+        }
+    }
+    $messages[] = "✅ 邮件设置检查完成";
+    
+    // 7. 创建公告表
+    $conn->query("CREATE TABLE IF NOT EXISTS `announcements` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `title` VARCHAR(255) NOT NULL COMMENT '公告标题',
+        `content` TEXT NOT NULL COMMENT '公告内容（支持Markdown和HTML）',
+        `type` ENUM('markdown', 'html') DEFAULT 'markdown' COMMENT '内容类型',
+        `is_active` TINYINT(1) DEFAULT 1 COMMENT '是否显示：0=隐藏, 1=显示',
+        `sort_order` INT DEFAULT 0 COMMENT '排序，数字越小越靠前',
+        `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='公告表'");
+    $messages[] = "✅ 公告表检查完成";
+    
     return $messages;
 }
 
@@ -95,12 +155,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['install'])) {
             `music` VARCHAR(255),
             `is_pinned` TINYINT(1) DEFAULT 0 COMMENT '置顶级别：0=不置顶, 1=置顶栏位1, 2=置顶栏位2, 3=置顶栏位3',
             `is_marked` TINYINT(1) DEFAULT 0 COMMENT '标记级别：0=普通, 1=标记栏位1, 2=标记栏位2, 3=标记栏位3',
-            `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
+            `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FULLTEXT INDEX `idx_content` (`content`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
         $conn->query("CREATE TABLE IF NOT EXISTS `comments` (
             `id` INT AUTO_INCREMENT PRIMARY KEY,
             `post_id` INT NOT NULL,
+            `parent_id` INT DEFAULT 0 COMMENT '回复的评论ID，0表示顶级评论',
             `name` VARCHAR(100) NOT NULL,
             `email` VARCHAR(100) NOT NULL,
             `content` TEXT NOT NULL,
@@ -117,7 +179,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['install'])) {
             ['friend_avatar', 'https://img12.360buyimg.com/ddimg/jfs/t1/187753/34/18828/41739/60c8012bE0e3f64e6/12a8c8f4b3f4b3f4.jpg'],
             ['friend_background', ''],
             ['friend_signature', '记录生活中的小确幸'],
-            ['music_url', '']
+            ['music_url', ''],
+            // SMTP邮件配置
+            ['smtp_enabled', '0'],
+            ['smtp_host', ''],
+            ['smtp_port', '587'],
+            ['smtp_username', ''],
+            ['smtp_password', ''],
+            ['smtp_from_email', ''],
+            ['smtp_from_name', ''],
+            ['admin_email', ''],
+            ['notify_admin_on_comment', '1'],
+            ['notify_user_on_reply', '1']
         ];
 
         foreach ($defaults as $setting) {

@@ -23,11 +23,11 @@
 .back-to-top {
     position: fixed;
     bottom: 30px;
-    right: 30px;
+    left: 30px;
     width: 44px;
     height: 44px;
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.95);
     border: 1px solid #e0e0e0;
     color: #666;
     cursor: pointer;
@@ -37,8 +37,8 @@
     opacity: 0;
     visibility: hidden;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    z-index: 999;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    z-index: 9999;
 }
 
 .back-to-top:hover {
@@ -56,9 +56,10 @@
 
 /* 深色模式下的回到顶部按钮 */
 body.dark-mode .back-to-top {
-    background: rgba(60, 60, 60, 0.9);
+    background: rgba(60, 60, 60, 0.95);
     border-color: #555;
     color: #e0e0e0;
+    z-index: 9999;
 }
 
 body.dark-mode .back-to-top:hover {
@@ -88,14 +89,18 @@ function scrollToTop() {
 }
 
 // 监听滚动事件，控制按钮显示/隐藏
-(function() {
+document.addEventListener('DOMContentLoaded', function() {
     const backToTopBtn = document.getElementById('backToTop');
     
-    if (!backToTopBtn) return;
+    if (!backToTopBtn) {
+        console.log('Back to top button not found');
+        return;
+    }
     
     // 滚动时检查位置
     function checkScroll() {
-        if (window.pageYOffset > 300) {
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+        if (scrollTop > 200) {
             backToTopBtn.classList.add('show');
         } else {
             backToTopBtn.classList.remove('show');
@@ -117,11 +122,11 @@ function scrollToTop() {
     }
     
     // 使用节流优化滚动监听
-    window.addEventListener('scroll', throttle(checkScroll, 100));
+    window.addEventListener('scroll', throttle(checkScroll, 100), { passive: true });
     
-    // 初始检查
-    checkScroll();
-})();
+    // 初始检查（延迟一点确保页面完全加载）
+    setTimeout(checkScroll, 100);
+});
 </script>
 
 <!-- 图片预览脚本 (仅管理员可见部分需要，放在这里全局可用) -->
@@ -156,49 +161,128 @@ function previewImages(input) {
 <script>
 const loadedComments = new Set();
 
-function loadComments(postId) {
-    const container = document.getElementById('comment-container-' + postId);
-    if (!container) return;
-    if (loadedComments.has(postId)) {
-        const form = container.querySelector('form');
-        if (form) { form.style.display = 'block'; form.querySelector('input[name="name"]').focus(); }
-        return;
-    }
-    container.innerHTML = '<div style="font-size:13px;color:#999;">加载中...</div>';
+// 页面加载时自动加载所有评论
+function initComments() {
+    document.querySelectorAll('.post-comment-container').forEach(container => {
+        const postId = container.getAttribute('data-post-id');
+        if (postId) {
+            loadCommentsData(postId);
+        }
+    });
+}
+
+// 加载评论数据（只加载评论列表，不显示表单）
+function loadCommentsData(postId) {
+    const commentList = document.getElementById('pcc-comment-list-' + postId);
+    const container = document.getElementById('post-comment-container-' + postId);
+    const likeList = document.querySelector('.pcc-like-list[data-post-id="' + postId + '"]');
+    if (!commentList || !container) return;
+    
     fetch('admin/get_comments.php?post_id=' + postId)
         .then(response => response.json())
         .then(data => {
             let html = '';
+            let hasComments = false;
+            
             if (data.comments && data.comments.length > 0) {
+                hasComments = true;
                 data.comments.forEach(comment => {
-                    html += `<div style="display:flex;align-items:flex-start;margin:6px 0;">
-                        <img src="${comment.avatar}" style="width:20px;height:20px;border-radius:50%;margin-right:8px;flex-shrink:0;" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2220%22 height=%2220%22 viewBox=%220 0 24 24%22 fill=%22%23ccc%22><circle cx=%2212%22 cy=%2212%22 r=%2210%22/></svg>'">
-                        <div style="font-size:13px;line-height:1.4;color:#333;">
-                            <span class="comment-name" data-name="${comment.name}" style="cursor:pointer;color:#07c160;font-weight:bold;">${comment.name}</span>: ${comment.content}
-                        </div>
+                    const isAuthor = comment.is_author || false;
+                    html += `
+                    <div class="pcc-comment-item" data-comment-id="${comment.id}">
+                        <a href="javascript:void(0);" data-name="${comment.name}">${escapeHtml(comment.name)}</a>
+                        ${isAuthor ? '<span class="author-badge">作者</span>' : ''}
+                        <span>:</span>
+                        <span class="pcc-comment-content" onclick="showReplyForm(${postId}, '${escapeHtml(comment.name)}')">${comment.content}</span>
                     </div>`;
                 });
+                commentList.innerHTML = html;
+            } else {
+                commentList.innerHTML = '';
             }
-            html += `<form id="comment-form-${postId}" onsubmit="return submitComment(event, ${postId})" style="display:block;margin-top:10px;padding-top:10px;border-top:1px solid #eee;">
-                <input type="hidden" name="post_id" value="${postId}">
-                <div style="display:flex;gap:8px;margin-bottom:8px;">
-                    <input type="text" name="name" placeholder="名字" maxlength="50" required style="width: 110px;flex:1;padding:6px 8px;font-size:13px;border:1px solid #ddd;border-radius:3px;">
-                    <input type="email" name="email" placeholder="QQ邮箱（可选）" style="flex:1;padding:6px 8px;font-size:13px;border:1px solid #ddd;border-radius:3px;">
-                </div>
-                <textarea name="content" placeholder="写下你的想法..." rows="2" maxlength="500" required style="width:95%;padding:6px 8px;font-size:13px;border:1px solid #ddd;border-radius:3px;margin-bottom:8px;"></textarea>
-                <div style="display:flex;gap:8px;justify-content:flex-end;">
-                    <button type="button" onclick="closeCommentForm(${postId})" style="background:none;border:1px solid #ddd;color:#666;padding:5px 12px;border-radius:3px;font-size:13px;cursor:pointer;">取消评论</button>
-                    <button type="submit" style="background:#07c160;color:white;border:none;padding:5px 12px;border-radius:3px;font-size:13px;cursor:pointer;">发送</button>
-                </div>
-            </form>
-            <div id="comment-error-${postId}" style="color:#e74c3c;font-size:12px;margin-top:8px;display:none;"></div>`;
-            container.innerHTML = html;
-            loadedComments.add(postId);
-            const input = document.querySelector(`#comment-form-${postId} input[name="name"]`);
-            if(input) input.focus();
+            
+            // 使用统一的函数更新容器显示状态
+            if (typeof updateCommentContainer === 'function') {
+                updateCommentContainer(postId);
+            } else {
+                // 备用逻辑：直接检查并更新
+                const hasLikes = likeList && likeList.style.display !== 'none';
+                if (hasComments || hasLikes) {
+                    container.style.display = 'block';
+                } else {
+                    container.style.display = 'none';
+                }
+            }
         })
-        .catch(() => { container.innerHTML = '<div style="color:#e74c3c;font-size:13px;">加载失败</div>'; });
+        .catch(() => {
+            // 加载失败时隐藏容器
+            container.style.display = 'none';
+        });
 }
+
+// 显示评论表单
+function showCommentForm(postId) {
+    const formWrapper = document.getElementById('comment-form-wrapper-' + postId);
+    if (!formWrapper) return;
+    
+    // 确保容器显示
+    const container = document.getElementById('post-comment-container-' + postId);
+    if (container) {
+        container.style.display = 'block';
+    }
+    
+    // 显示表单
+    formWrapper.style.display = 'block';
+    
+    // 恢复用户信息
+    const userInfo = getUserInfo();
+    const nameInput = formWrapper.querySelector('input[name="name"]');
+    const emailInput = formWrapper.querySelector('input[name="email"]');
+    if (userInfo.name && nameInput) nameInput.value = userInfo.name;
+    if (userInfo.email && emailInput) emailInput.value = userInfo.email;
+    
+    // 聚焦到内容输入框
+    const textarea = formWrapper.querySelector('textarea[name="content"]');
+    if (textarea) {
+        textarea.focus();
+    }
+}
+
+// 隐藏评论表单
+function hideCommentForm(postId) {
+    const formWrapper = document.getElementById('comment-form-wrapper-' + postId);
+    if (formWrapper) {
+        formWrapper.style.display = 'none';
+    }
+    
+    // 使用统一的函数更新容器显示状态
+    if (typeof updateCommentContainer === 'function') {
+        updateCommentContainer(postId);
+    }
+}
+
+// 显示回复表单（点击评论内容时）
+function showReplyForm(postId, authorName) {
+    showCommentForm(postId);
+    const formWrapper = document.getElementById('comment-form-wrapper-' + postId);
+    if (formWrapper) {
+        const textarea = formWrapper.querySelector('textarea[name="content"]');
+        if (textarea) {
+            textarea.value = '回复 @' + authorName + ': ';
+            textarea.focus();
+        }
+    }
+}
+
+// HTML转义
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// 页面加载完成后初始化评论
+document.addEventListener('DOMContentLoaded', initComments);
 
 function submitComment(event, postId) {
     event.preventDefault();
@@ -222,8 +306,8 @@ function submitComment(event, postId) {
 }
 
 function closeCommentForm(postId) {
-    const form = document.getElementById('comment-form-' + postId);
-    if (form) form.style.display = 'none';
+    const formWrapper = document.querySelector('#comment-container-' + postId + ' .comment-form-wrapper');
+    if (formWrapper) formWrapper.style.display = 'none';
 }
 
 document.addEventListener('click', function(e) {
@@ -444,6 +528,218 @@ document.addEventListener('keydown', function(event) {
         }
     })();
 </script>
+
+<!-- 评论系统样式 -->
+<style>
+/* 点赞和评论容器 - 完全参考 icefox */
+.post-comment-container {
+    background-color: #f0f0f0;
+    margin-top: 10px;
+    padding: 10px;
+    margin-left: 40px; /* 与文章内容对齐，不到头像位置 */
+}
+
+body.dark-mode .post-comment-container {
+    background-color: #181818;
+}
+
+/* 点赞列表 */
+.pcc-like-list {
+    font-size: 14px;
+    color: #576b95;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.pcc-like-summary {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.pcc-like-list .like-icon {
+    flex-shrink: 0;
+    color: #ff6b6b;
+    width: 16px;
+    height: 16px;
+}
+
+.pcc-like-list .like-users-text {
+    color: #576b95;
+}
+
+body.dark-mode .pcc-like-list .like-users-text {
+    color: #7d8fb3;
+}
+
+/* 评论列表 */
+.pcc-comment-list {
+    font-size: 14px;
+    line-height: 1.6;
+    margin-top: 8px;
+}
+
+.pcc-comment-item {
+    margin-bottom: 4px;
+    word-wrap: break-word;
+}
+
+.pcc-comment-item:last-child {
+    margin-bottom: 0;
+}
+
+/* 评论作者链接 - icefox 样式 */
+.pcc-comment-list > .pcc-comment-item a {
+    font-size: 14px;
+    color: #576b95;
+    text-decoration: none;
+}
+
+body.dark-mode .pcc-comment-list > .pcc-comment-item a {
+    color: #7d8fb3;
+}
+
+.pcc-comment-list > .pcc-comment-item span {
+    font-size: 14px;
+    color: #333;
+}
+
+body.dark-mode .pcc-comment-list > .pcc-comment-item span {
+    color: #e0e0e0;
+}
+
+/* 作者标识 */
+.pcc-comment-item .author-badge {
+    font-size: 11px;
+    padding: 2px 6px;
+    background: #ff6b6b;
+    color: white;
+    border-radius: 3px;
+    margin: 0 4px;
+    font-weight: 500;
+}
+
+body.dark-mode .pcc-comment-item .author-badge {
+    background: #ff6b6b;
+}
+
+/* 评论内容 */
+.pcc-comment-content {
+    color: #333;
+    cursor: pointer;
+}
+
+body.dark-mode .pcc-comment-content {
+    color: #e0e0e0;
+}
+
+.pcc-comment-content:hover {
+    color: #07c160;
+}
+
+/* 评论表单 */
+.comment-form-wrapper {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #ddd;
+}
+
+body.dark-mode .comment-form-wrapper {
+    border-top-color: #444;
+}
+
+.comment-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.comment-form .form-row {
+    display: flex;
+    gap: 10px;
+}
+
+.comment-form input[type="text"],
+.comment-form input[type="email"],
+.comment-form textarea {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    background: #fff;
+    color: #333;
+    box-sizing: border-box;
+}
+
+body.dark-mode .comment-form input[type="text"],
+body.dark-mode .comment-form input[type="email"],
+body.dark-mode .comment-form textarea {
+    background: #3d3d3d;
+    border-color: #555;
+    color: #e0e0e0;
+}
+
+.comment-form input[type="text"],
+.comment-form input[type="email"] {
+    flex: 1;
+}
+
+.comment-form textarea {
+    width: 100%;
+    resize: vertical;
+    min-height: 60px;
+}
+
+.comment-form input:focus,
+.comment-form textarea:focus {
+    outline: none;
+    border-color: #07c160;
+}
+
+/* 表单按钮 */
+.comment-form .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.comment-form .btn-cancel,
+.comment-form .btn-submit {
+    padding: 6px 16px;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    border: none;
+}
+
+.comment-form .btn-cancel {
+    background: #e0e0e0;
+    color: #666;
+}
+
+body.dark-mode .comment-form .btn-cancel {
+    background: #444;
+    color: #bbb;
+}
+
+.comment-form .btn-submit {
+    background: #07c160;
+    color: white;
+}
+
+.comment-form .btn-submit:hover {
+    background: #06b359;
+}
+
+/* 移动端适配 */
+@media (max-width: 576px) {
+    .comment-form .form-row {
+        flex-direction: column;
+        gap: 8px;
+    }
+}
+</style>
 
 </body>
 </html>
